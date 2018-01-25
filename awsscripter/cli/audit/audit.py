@@ -1,7 +1,8 @@
 import click
 
 from awsscripter.stack.helpers import catch_exceptions
-
+from awsscripter.cli.audit.cispaudit import audit_cisp_command
+from awsscripter.cli.audit.hippaaudit import audit_hippa_command
 
 @click.group(name="audit")
 def audit_group():
@@ -10,26 +11,5 @@ def audit_group():
 
     """
     pass
-
-@audit_group.command("CISP")
-@click.argument('level')
-# @click.Choice('Full', 'Medium')
-@catch_exceptions
-@click.pass_context
-def audit_cisp(ctx, level):
-    """
-    Depending on level , it will perform the CISP audit, by default the level is FULL
-    """
-    print("Auditing with level  " + level)
-
-
-@audit_group.command("HIPPA")
-@catch_exceptions
-@click.argument('level')
-# @click.Choice('Full', 'Medium')
-@click.pass_context
-def audit_hippa(ctx, level):
-    """
-    Depending on level , it will perform the HIPPA audit, by default the level is FULL
-    """
-    print("Auditing with level  " + level)
+audit_group.add_command(audit_cisp_command)
+audit_group.add_command(audit_hippa_command)
