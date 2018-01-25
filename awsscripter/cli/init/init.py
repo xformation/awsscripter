@@ -4,9 +4,9 @@ import os
 import click
 import yaml
 
-from awsscripter.cli.helpers import catch_exceptions
 from awsscripter.common.config_reader import ENVIRONMENT_CONFIG_ATTRIBUTES
 from awsscripter.common.exceptions import ProjectAlreadyExistsError
+from awsscripter.stack.helpers import catch_exceptions
 
 
 @click.group(name="init")

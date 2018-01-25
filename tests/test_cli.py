@@ -12,13 +12,13 @@ from click.testing import CliRunner
 from mock import MagicMock, patch, sentinel
 
 from awsscripter.cli import cli
-from awsscripter.cli.helpers import CustomJsonEncoder, catch_exceptions
-from awsscripter.cli.helpers import get_stack_or_env
-from awsscripter.cli.helpers import setup_logging, write, ColouredFormatter
 from awsscripter.common.config_reader import ConfigReader
 from awsscripter.common.environment import Environment
 from awsscripter.common.exceptions import SceptreException
 from awsscripter.stack import Stack
+from awsscripter.stack.helpers import CustomJsonEncoder, catch_exceptions
+from awsscripter.stack.helpers import get_stack_or_env
+from awsscripter.stack.helpers import setup_logging, write, ColouredFormatter
 from awsscripter.stack.stack_status import StackStatus, StackChangeSetStatus
 
 

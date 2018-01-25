@@ -11,7 +11,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 
-from .exceptions import CircularDependenciesError
+from awsscripter.common.exceptions import CircularDependenciesError
 
 
 def camel_to_snake_case(string):

@@ -1,7 +1,7 @@
 import click
 
-from awsscripter.cli.helpers import catch_exceptions, get_stack_or_env, write
-from awsscripter.cli.helpers import simplify_change_set_description
+from awsscripter.stack.helpers import catch_exceptions, get_stack_or_env, write
+from awsscripter.stack.helpers import simplify_change_set_description
 
 
 @click.group(name="describe")

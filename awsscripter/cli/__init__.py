@@ -7,27 +7,16 @@ This module implements awsscripter's CLI, and should not be directly imported.
 """
 
 import os
-
 import warnings
 
 import click
 import colorama
 import yaml
-
+from awsscripter.cli.init.init import init_group
+from awsscripter.cli.audit.audit import audit_group
+from awsscripter.cli.stack.stack import stack_group
+from awsscripter.stack.helpers import  setup_logging, catch_exceptions
 from awsscripter import __version__
-from awsscripter.cli.init import init_group
-from awsscripter.cli.audit import audit_group
-from awsscripter.cli.create import create_command
-from awsscripter.cli.update import update_command
-from awsscripter.cli.delete import delete_command
-from awsscripter.cli.launch import launch_command
-from awsscripter.cli.execute import execute_command
-from awsscripter.cli.describe import describe_group
-from awsscripter.cli.list import list_group
-from awsscripter.cli.policy import set_policy_command
-from awsscripter.cli.status import status_command
-from awsscripter.cli.template import validate_command, generate_command
-from awsscripter.cli.helpers import setup_logging, catch_exceptions
 
 
 @click.group()
@@ -93,14 +82,4 @@ def cli(
 
 cli.add_command(init_group)
 cli.add_command(audit_group)
-cli.add_command(create_command)
-cli.add_command(update_command)
-cli.add_command(delete_command)
-cli.add_command(launch_command)
-cli.add_command(execute_command)
-cli.add_command(validate_command)
-cli.add_command(generate_command)
-cli.add_command(set_policy_command)
-cli.add_command(status_command)
-cli.add_command(list_group)
-cli.add_command(describe_group)
+cli.add_command(stack_group)

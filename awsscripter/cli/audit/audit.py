@@ -1,6 +1,6 @@
 import click
 
-from awsscripter.cli.helpers import catch_exceptions
+from awsscripter.stack.helpers import catch_exceptions
 
 
 @click.group(name="audit")

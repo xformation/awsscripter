@@ -1,6 +1,6 @@
 import click
 
-from awsscripter.cli.helpers import catch_exceptions, get_stack_or_env
+from awsscripter.stack.helpers import catch_exceptions, get_stack_or_env
 
 
 @click.command(name="set-policy")
