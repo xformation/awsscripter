@@ -2,7 +2,7 @@ import click
 
 from awsscripter.cli.helpers import catch_exceptions, get_stack_or_env
 from awsscripter.cli.helpers import confirmation
-from awsscripter.stack.stack.stack_status import StackStatus
+from awsscripter.stack.stack_status import StackStatus
 
 
 @click.command(name="delete")

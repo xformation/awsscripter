@@ -16,7 +16,7 @@ import botocore
 from awsscripter.common.exceptions import StackDoesNotExistError
 
 from awsscripter.common.helpers import recurse_into_sub_environments, _detect_cycles
-from awsscripter.stack.stack.stack_status import StackStatus
+from awsscripter.stack.stack_status import StackStatus
 
 
 class Environment(object):

@@ -16,6 +16,7 @@ import yaml
 
 from awsscripter import __version__
 from awsscripter.cli.init import init_group
+from awsscripter.cli.audit import audit_group
 from awsscripter.cli.create import create_command
 from awsscripter.cli.update import update_command
 from awsscripter.cli.delete import delete_command
@@ -91,6 +92,7 @@ def cli(
 
 
 cli.add_command(init_group)
+cli.add_command(audit_group)
 cli.add_command(create_command)
 cli.add_command(update_command)
 cli.add_command(delete_command)

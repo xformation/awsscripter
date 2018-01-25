@@ -5,7 +5,7 @@ import click
 from awsscripter.cli.helpers import catch_exceptions, confirmation
 from awsscripter.cli.helpers import simplify_change_set_description
 from awsscripter.cli.helpers import write, get_stack_or_env
-from awsscripter.stack.stack.stack_status import StackStatus, StackChangeSetStatus
+from awsscripter.stack.stack_status import StackStatus, StackChangeSetStatus
 
 
 @click.command(name="update")

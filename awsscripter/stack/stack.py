@@ -21,13 +21,13 @@ from awsscripter.common.helpers import get_external_stack_name
 from awsscripter.common.template import Template
 from awsscripter.hooks import add_stack_hooks
 from awsscripter.resolvers import ResolvableProperty
-from .exceptions import CannotUpdateFailedStackError
-from .exceptions import ProtectedStackError
-from .exceptions import StackDoesNotExistError
-from .exceptions import UnknownStackChangeSetStatusError
-from .exceptions import UnknownStackStatusError
-from .stack_status import StackChangeSetStatus
-from .stack_status import StackStatus
+from awsscripter.common.exceptions import CannotUpdateFailedStackError
+from awsscripter.common.exceptions import ProtectedStackError
+from awsscripter.common.exceptions import StackDoesNotExistError
+from awsscripter.common.exceptions import UnknownStackChangeSetStatusError
+from awsscripter.common.exceptions import UnknownStackStatusError
+from awsscripter.stack.stack_status import StackChangeSetStatus
+from awsscripter.stack.stack_status import StackStatus
 
 
 class Stack(object):

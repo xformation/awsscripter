@@ -46,7 +46,9 @@ setup(
         "awsscripter",
         "awsscripter/resolvers",
         "awsscripter/hooks",
-        "awsscripter/cli"
+        "awsscripter/cli",
+        "awsscripter/stack",
+        "awsscripter/common"
     ],
     package_dir={
         "awsscripter": "awsscripter"
