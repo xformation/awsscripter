@@ -25,7 +25,7 @@ from awsscripter import __version__
 from awsscripter.common.environment import Environment
 from awsscripter.common.exceptions import EnvironmentNotFoundError, VersionIncompatibleError
 from awsscripter.common.exceptions import InvalidawsscripterDirectoryError, ConfigFileNotFoundError
-from awsscripter.stack import Stack
+from awsscripter.stack.stack import Stack
 
 ConfigAttributes = collections.namedtuple("Attributes", "required optional")
 
@@ -244,7 +244,7 @@ class ConfigReader(object):
 
         :param path: A config directory path.
         :type path: str
-        :raises: awsscripter.exceptions.InvalidawsscripterDirectoryError
+        :raises: awsscripter.common.exceptions.InvalidawsscripterDirectoryError
         """
         if not path.isdir(config_path):
             raise InvalidawsscripterDirectoryError(
@@ -256,7 +256,7 @@ class ConfigReader(object):
         Raises a VersionIncompatibleException when the current awsscripter version
         does not comply with the configured version requirement.
 
-        :raises: awsscripter.exceptions.VersionIncompatibleException
+        :raises: awsscripter.common.exceptions.VersionIncompatibleException
         """
         awsscripter_version = __version__
         if 'require_version' in config:
@@ -278,7 +278,7 @@ class ConfigReader(object):
         :param attr: Data structure to search through.
         :type attr: dict
         :param stack: Stack object to associate to objects.
-        :type directory_path: awsscripter.stack.Stack
+        :type directory_path: awsscripter.stack.stack.Stack
         """
         if isinstance(attr, dict):
             for key, value in attr.items():
@@ -334,7 +334,7 @@ class ConfigReader(object):
         :param config: Base config to use as defaults.
         :type config: dict
         :returns: Stack object
-        :rtype: awsscripter.stack.Stack
+        :rtype: awsscripter.stack.stack.Stack
         """
         directory, filename = path.split(rel_path)
         if filename != "config.yaml":

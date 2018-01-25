@@ -27,13 +27,13 @@ def _retry_boto_call(func):
 
     The time waited between retries increases linearly. If rate limits are
     hit 30 times, _retry_boto_call raises a
-    awsscripter.exceptions.RetryLimitExceededException.
+    awsscripter.common.exceptions.RetryLimitExceededException.
 
     :param func: a function that uses boto calls
     :type func: function
     :returns: The decorated function.
     :rtype: function
-    :raises: awsscripter.exceptions.RetryLimitExceededException
+    :raises: awsscripter.common.exceptions.RetryLimitExceededException
     """
     logger = logging.getLogger(__name__)
 

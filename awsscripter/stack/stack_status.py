@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-awsscripter.stack_status
+awsscripter.stack.stack_status
 
 This module implemets structs for simplified stack status and simplified change
 set status values.

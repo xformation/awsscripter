@@ -10,7 +10,7 @@ class Hook(object):
     :param argument: The argument of the hook.
     :type argument: str
     :param stack: The associated stack of the hook.
-    :type stack: awsscripter.stack.Stack
+    :type stack: awsscripter.stack.stack.Stack
     """
     __metaclass__ = abc.ABCMeta
 

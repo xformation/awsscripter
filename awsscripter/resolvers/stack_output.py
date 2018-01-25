@@ -32,7 +32,7 @@ class StackOutputBase(Resolver):
         :type output_key: str
         :returns: Stack output value.
         :rtype: str
-        :raises: awsscripter.exceptions.DependencyStackMissingOutputError
+        :raises: awsscripter.common.exceptions.DependencyStackMissingOutputError
         """
         outputs = self._get_stack_outputs(stack_name)
 
@@ -54,7 +54,7 @@ class StackOutputBase(Resolver):
         :type stack_name: str
         :returns: A formatted version of the stack outputs.
         :rtype: dict
-        :raises: awsscripter.stack.DependencyStackNotLaunchedException
+        :raises: awsscripter.stack.stack.DependencyStackNotLaunchedException
         """
         self.logger.debug("Collecting outputs from '{0}'...".format(
             stack_name

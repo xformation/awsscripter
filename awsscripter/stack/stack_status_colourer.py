@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-awsscripter.stack_status_colourer
+awsscripter.stack.stack_status_colourer
 
 This module implements a StackStatusColourer class, colours any Stack Statuses
 found in a given string.
@@ -45,7 +45,7 @@ class StackStatusColourer(object):
         Colours all Stack Statueses in ``string``.
 
         The colours applied are defined in
-        ``awsscripter.stack_status_colourer.StackStatusColourer.STACK_STATUS_CODES``
+        ``awsscripter.stack.stack_status_colourer.StackStatusColourer.STACK_STATUS_CODES``
 
         :param string: A string to colour.
         :type string: str

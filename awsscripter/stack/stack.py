@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-awsscripter.stack
+awsscripter.stack.stack
 
 This module implements a Stack class, which stores data and logic associated
 with a particular stack.
@@ -80,7 +80,7 @@ class Stack(object):
 
     def __repr__(self):
         return (
-            "awsscripter.stack.Stack("
+            "awsscripter.stack.stack.Stack("
             "name='{name}', project_code='{project_code}', "
             "template_path='{template_path}', region='{region}', "
             "iam_role='{iam_role}', parameters='{parameters}', "
@@ -128,7 +128,7 @@ class Stack(object):
         Creates the stack.
 
         :returns: The stack's status.
-        :rtype: awsscripter.stack_status.StackStatus
+        :rtype: awsscripter.stack.stack_status.StackStatus
         """
         self._protect_execution()
         self.logger.info("%s - Creating stack", self.name)
@@ -165,7 +165,7 @@ class Stack(object):
         Updates the stack.
 
         :returns: The stack's status.
-        :rtype: awsscripter.stack_status.StackStatus
+        :rtype: awsscripter.stack.stack_status.StackStatus
         """
         self._protect_execution()
         self.logger.info("%s - Updating stack", self.name)
@@ -204,7 +204,7 @@ class Stack(object):
         performed, launch exits gracefully.
 
         :returns: The stack's status.
-        :rtype: awsscripter.stack_status.StackStatus
+        :rtype: awsscripter.stack.stack_status.StackStatus
         """
         self._protect_execution()
         self.logger.info("%s - Launching stack", self.name)
@@ -260,7 +260,7 @@ class Stack(object):
         Deletes the stack.
 
         :returns: The stack's status.
-        :rtype: awsscripter.stack_status.StackStatus
+        :rtype: awsscripter.stack.stack_status.StackStatus
         """
         self._protect_execution()
         self.logger.info("%s - Deleting stack", self.name)
@@ -560,8 +560,8 @@ class Stack(object):
         Returns the stack's status.
 
         :returns: The stack's status.
-        :rtype: awsscripter.stack_status.StackStatus
-        :raises: awsscripter.exceptions.StackDoesNotExistError
+        :rtype: awsscripter.stack.stack_status.StackStatus
+        :raises: awsscripter.common.exceptions.StackDoesNotExistError
         """
         try:
             status = self.describe()["Stacks"][0]["StackStatus"]
@@ -615,7 +615,7 @@ class Stack(object):
         Raises a ProtectedStackError if protect == True.
         This error is meant to stop the
 
-        :raises: awsscripter.exceptions.ProtectedStackError
+        :raises: awsscripter.common.exceptions.ProtectedStackError
         """
         if self.protected:
             raise ProtectedStackError(
@@ -629,7 +629,7 @@ class Stack(object):
         while it waits.
 
         :returns: The final stack status.
-        :rtype: awsscripter.stack_status.StackStatus
+        :rtype: awsscripter.stack.stack_status.StackStatus
         """
         status = StackStatus.IN_PROGRESS
 
@@ -648,7 +648,7 @@ class Stack(object):
         Returns the simplified Stack Status.
 
         The simplified stack status is represented by the struct
-        ``awsscripter.StackStatus()`` and can take one of the following options:
+        ``awsscripter.stack.stackStatus()`` and can take one of the following options:
 
         * complete
         * in_progress
@@ -657,7 +657,7 @@ class Stack(object):
         :param status: The CloudFormation stack status to simplify.
         :type status: str
         :returns: The stack's simplified status
-        :rtype: awsscripter.stack_status.StackStatus
+        :rtype: awsscripter.stack.stack_status.StackStatus
         """
         if status.endswith("ROLLBACK_COMPLETE"):
             return StackStatus.FAILED
@@ -700,7 +700,7 @@ class Stack(object):
         :param change_set_name: The name of the change set.
         :type change_set_name: str
         :returns: The change set's status.
-        :rtype: awsscripter.stack_status.StackChangeSetStatus
+        :rtype: awsscripter.stack.stack_status.StackChangeSetStatus
         """
         while True:
             status = self._get_cs_status(change_set_name)
@@ -717,7 +717,7 @@ class Stack(object):
         :param change_set_name: The name of the change set.
         :type change_set_name: str
         :returns: The change set's status.
-        :rtype: awsscripter.stack_status.StackChangeSetStatus
+        :rtype: awsscripter.stack.stack_status.StackChangeSetStatus
         """
         cs_description = self.describe_change_set(change_set_name)
 

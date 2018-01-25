@@ -13,10 +13,10 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, wait
 
 import botocore
-from awsscripter.exceptions import StackDoesNotExistError
+from awsscripter.common.exceptions import StackDoesNotExistError
 
 from awsscripter.common.helpers import recurse_into_sub_environments, _detect_cycles
-from awsscripter.stack.stack_status import StackStatus
+from awsscripter.stack.stack.stack_status import StackStatus
 
 
 class Environment(object):
@@ -169,7 +169,7 @@ class Environment(object):
         dependency stack has failed, ``stack`` is marked as failed.
 
         :param stack: The stack to build.
-        :type: awsscripter.Stack
+        :type: awsscripter.stack.stack
         :param threading_events: A dict of threading.Events, keyed by stack \
         names, which is used to notify other stacks when a particular stack \
         has been built.
@@ -216,7 +216,7 @@ class Environment(object):
     @recurse_into_sub_environments
     def _get_initial_statuses(self):
         """
-        Returns a "pending" awsscripter.stack_status.StackStatus for each stack
+        Returns a "pending" awsscripter.stack.stack_status.StackStatus for each stack
         in every sub-environment.
 
         :returns: A "pending" stack status for each stack, keyed by the

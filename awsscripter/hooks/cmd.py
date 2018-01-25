@@ -16,7 +16,7 @@ class Cmd(Hook):
         """
         Runs the argument string in a subprocess.
 
-        :raises: awsscripter.exceptions.InvalidTaskArgumentTypeException
+        :raises: awsscripter.common.exceptions.InvalidTaskArgumentTypeException
         :raises: subprocess.CalledProcessError
         """
         try:

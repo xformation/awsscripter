@@ -12,7 +12,7 @@ from jinja2.exceptions import TemplateError
 
 from awsscripter.common.config_reader import ConfigReader
 from awsscripter.common.exceptions import awsscripterException
-from awsscripter.stack.stack_status_colourer import StackStatusColourer
+from awsscripter.stack.stack.stack_status_colourer import StackStatusColourer
 
 
 def catch_exceptions(func):
