@@ -1,6 +1,5 @@
 import click
 
-from awsscripter.stack.helpers import catch_exceptions
 from awsscripter.cli.audit.cispaudit import audit_cisp_command
 from awsscripter.cli.audit.hippaaudit import audit_hippa_command
 
