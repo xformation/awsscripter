@@ -15,6 +15,7 @@ import yaml
 from awsscripter.cli.init.init import init_group
 from awsscripter.cli.audit.audit import audit_group
 from awsscripter.cli.stack.stack import stack_group
+from awsscripter.cli.testcommand.testcommand import testcommand_group
 from awsscripter.stack.helpers import  setup_logging, catch_exceptions
 from awsscripter import __version__
 
@@ -83,3 +84,4 @@ def cli(
 cli.add_command(init_group)
 cli.add_command(audit_group)
 cli.add_command(stack_group)
+cli.add_command(testcommand_group)
