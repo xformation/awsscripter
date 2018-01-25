@@ -6,7 +6,7 @@ from awsscripter.cli.helpers import catch_exceptions
 @click.group(name="audit")
 def audit_group():
     """
-    Commands for auditing aws environment with awsscripter.
+    Commands for auditing aws environment with awsscripter. This will iclude CISP/ HIPPA Audit for now.
 
     """
     pass
