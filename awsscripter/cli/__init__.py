@@ -19,6 +19,7 @@ from awsscripter.cli.testcommand.testcommand import testcommand_group
 from awsscripter.stack.helpers import  setup_logging, catch_exceptions
 from awsscripter import __version__
 from awsscripter.cli.security.security import security_group
+from awsscripter.cli.operator.operator import operator_group
 
 
 @click.group()
@@ -87,3 +88,4 @@ cli.add_command(audit_group)
 cli.add_command(stack_group)
 cli.add_command(testcommand_group)
 cli.add_command(security_group)
+cli.add_command(operator_group)
