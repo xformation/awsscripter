@@ -137,26 +137,14 @@ class MyLambdaClass(LambdaBase):
         # Comment out unwanted controls
         control1 = []
         control1.append(self.control_1_1_root_use(cred_report))
+        # Join results
+        controls = []
+        controls.append(control1)
+
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
-            json_output(controls)
+            MyLambdaClass.json_output(controls)
 
-        # Create HTML report file if enabled
-        if self.S3_WEB_REPORT:
-            htmlReport = json2html(controls, accountNumber)
-            if S3_WEB_REPORT_OBFUSCATE_ACCOUNT:
-                for n, _ in enumerate(htmlReport):
-                    htmlReport[n] = re.sub(r"\d{12}", "111111111111", htmlReport[n])
-            signedURL = s3report(htmlReport, accountNumber)
-            if self.OUTPUT_ONLY_JSON is False:
-                print("SignedURL:\n" + signedURL)
-            if self.SEND_REPORT_URL_TO_SNS is True:
-                send_results_to_sns(signedURL)
-
-        # Report back to Config if we detected that the script is initiated from Config Rules
-        if self.configRule:
-            evalAnnotation = shortAnnotation(controls)
-            set_evaluation(invokingEvent, event, evalAnnotation)
 
     def get_cred_report(self):
         """Summary
@@ -181,7 +169,7 @@ class MyLambdaClass(LambdaBase):
             service="iam",
             command="generate_credential_report",
             kwargs=perform_audit_kwargs
-        ) != "COMPLETE":
+        )['State'] != "COMPLETE":
             time.sleep(2)
             x += 1
             # If no credentail report is delivered within this time fail the check.
@@ -275,6 +263,80 @@ class MyLambdaClass(LambdaBase):
                 print("Something went wrong")
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def json_output(controlResult):
+        """Summary
+
+        Args:
+            controlResult (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        inner = dict()
+        outer = dict()
+        for m in range(len(controlResult)):
+            inner = dict()
+            for n in range(len(controlResult[m])):
+                x = int(controlResult[m][n]['ControlId'].split('.')[1])
+                inner[x] = controlResult[m][n]
+            y = controlResult[m][0]['ControlId'].split('.')[0]
+            outer[y] = inner
+        if MyLambdaClass.OUTPUT_ONLY_JSON is True:
+            print(json.dumps(outer, sort_keys=True, indent=4, separators=(',', ': ')))
+        else:
+            print("JSON output:")
+            print("-------------------------------------------------------")
+            print(json.dumps(outer, sort_keys=True, indent=4, separators=(',', ': ')))
+            print("-------------------------------------------------------")
+            print("\n")
+            print("Summary:")
+            print(MyLambdaClass.shortAnnotation(controlResult))
+            print("\n")
+        return 0
+
+    def shortAnnotation(controlResult):
+        """Summary
+
+        Args:
+            controlResult (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        annotation = []
+        longAnnotation = False
+        for m, _ in enumerate(controlResult):
+            for n in range(len(controlResult[m])):
+                if controlResult[m][n]['Result'] is False:
+                    if len(str(annotation)) < 220:
+                        annotation.append(controlResult[m][n]['ControlId'])
+                    else:
+                        longAnnotation = True
+        if longAnnotation:
+            annotation.append("etc")
+            return "{\"Failed\":" + json.dumps(annotation) + "}"
+        else:
+            return "{\"Failed\":" + json.dumps(annotation) + "}"
+
+    def send_results_to_sns(url):
+        """Summary
+
+        Args:
+            url (TYPE): SignedURL created by the S3 upload function
+
+        Returns:
+            TYPE: Description
+        """
+        # Get correct region for the TopicARN
+        region = (MyLambdaClass.SNS_TOPIC_ARN.split("sns:", 1)[1]).split(":", 1)[0]
+        client = boto3.client('sns', region_name=region)
+        client.publish(
+            TopicArn=MyLambdaClass.SNS_TOPIC_ARN,
+            Subject="AWS CIS Benchmark report - " + str(time.strftime("%c")),
+            Message=json.dumps({'default': url}),
+            MessageStructure='json'
+        )
 
 
 # input values for args and/or kwargs
