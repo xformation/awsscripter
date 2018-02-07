@@ -18,7 +18,8 @@ from awsscripter.cli.stack.stack import stack_group
 from awsscripter.cli.testcommand.testcommand import testcommand_group
 from awsscripter.stack.helpers import  setup_logging, catch_exceptions
 from awsscripter import __version__
-
+from awsscripter.cli.security.security import security_group
+from awsscripter.cli.
 
 @click.group()
 @click.version_option(version=__version__, prog_name="awsscripter")
@@ -85,3 +86,4 @@ cli.add_command(init_group)
 cli.add_command(audit_group)
 cli.add_command(stack_group)
 cli.add_command(testcommand_group)
+cli.add_command(security_group)
