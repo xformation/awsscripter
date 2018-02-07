@@ -65,7 +65,7 @@ class Environment(object):
         stack_statuses = self._get_initial_statuses()
         launch_dependencies = self._get_launch_dependencies(self.path)
 
-        self._check_for_circular_dependencies()
+        # self._check_for_circular_dependencies()
         self._build(
             "launch", threading_events, stack_statuses, launch_dependencies
         )

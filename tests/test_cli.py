@@ -14,8 +14,8 @@ from mock import MagicMock, patch, sentinel
 from awsscripter.cli import cli
 from awsscripter.common.config_reader import ConfigReader
 from awsscripter.common.environment import Environment
-from awsscripter.common.exceptions import SceptreException
-from awsscripter.stack import Stack
+from awsscripter.common.exceptions import awsscripterException
+from awsscripter.stack.stack import Stack
 from awsscripter.stack.helpers import CustomJsonEncoder, catch_exceptions
 from awsscripter.stack.helpers import get_stack_or_env
 from awsscripter.stack.helpers import setup_logging, write, ColouredFormatter
@@ -25,7 +25,7 @@ from awsscripter.stack.stack_status import StackStatus, StackChangeSetStatus
 class TestCli(object):
 
     def setup_method(self, test_method):
-        self.patcher_ConfigReader = patch("awsscripter.cli.helpers.ConfigReader")
+        self.patcher_ConfigReader = patch("awsscripter.common.config_reader.ConfigReader")
         self.patcher_getcwd = patch("awsscripter.cli.os.getcwd")
 
         self.mock_ConfigReader = self.patcher_ConfigReader.start()
@@ -52,7 +52,7 @@ class TestCli(object):
     def test_catch_excecptions(self, mock_exit):
         @catch_exceptions
         def raises_exception():
-            raise SceptreException()
+            raise awsscripterException()
 
         raises_exception()
         mock_exit.assert_called_once_with(1)
@@ -229,8 +229,12 @@ class TestCli(object):
                 ]
             }
         self.mock_stack.describe_resources.return_value = response
-        result = self.runner.invoke(cli, ["list", "resources", "dev/vpc.yaml"])
+        result = self.runner.invoke(cli, ["stack", "list", "resources", "dev/vpc.yaml"])
         assert yaml.load(result.output) == response
+        assert result.exit_code == 0
+
+    def test_create_envorstack(self):
+        result = self.runner.invoke(cli, ["--debug","--dir","D:\\mycode\\examples\\baseecscluster","stack", "launch", "dev"])
         assert result.exit_code == 0
 
     @pytest.mark.parametrize(
@@ -771,8 +775,11 @@ class TestCli(object):
         assert stack is None
 def main():
     foo = TestCli()  
-    foo.setup_method("test_list_stack_resources")         
-    foo.test_list_stack_resources()
+    # foo.setup_method("test_list_stack_resources")
+    # foo.test_list_stack_resources()
+    foo.setup_method("test_create_envorstack")
+    foo.test_create_envorstack()
+
 
 if __name__ == "__main__":
     main()

@@ -23,12 +23,12 @@ def launch_command(ctx, path, yes):
     stack, env = get_stack_or_env(ctx, path)
 
     if stack:
-        confirmation(action, yes, stack=path)
+        # confirmation(action, yes, stack=path)
         response = stack.launch()
         if response != StackStatus.COMPLETE:
             exit(1)
     elif env:
-        confirmation(action, yes, environment=path)
+        # confirmation(action, yes, environment=path)
         response = env.launch()
         if not all(
             status == StackStatus.COMPLETE for status in response.values()

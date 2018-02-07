@@ -61,3 +61,19 @@ def add_stack_hooks(func):
         return response
 
     return decorated
+def add_audit_hooks(func):
+    """
+    A function decorator to trigger the before and after hooks, relative
+    to the decorated function's name.
+    :param func: a function that operates on a stack
+    :type func: function
+    """
+    @wraps(func)
+    def decorated(self, *args, **kwargs):
+        execute_hooks(self.hooks.get("before_" + func.__name__))
+        response = func(self, *args, **kwargs)
+        execute_hooks(self.hooks.get("after_" + func.__name__))
+
+        return response
+
+    return decorated
