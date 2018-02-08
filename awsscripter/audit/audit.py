@@ -7,9 +7,8 @@ This module implements a Audit class, which stores data and logic associated
 with audit.
 
 """
-
-import logging
 from __future__ import print_function
+import logging
 import json
 import csv
 import time
@@ -402,10 +401,10 @@ class Audit(object):
     # 1.5 Ensure IAM password policy requires at least one uppercase letter (Scored)
     def control_1_5_password_policy_uppercase(self, passwordpolicy):
         """Summary
-    
+
         Args:
             passwordpolicy (TYPE): Description
-    
+
         Returns:
             TYPE: Description
         """
@@ -423,7 +422,7 @@ class Audit(object):
                 result = False
                 failReason = "Password policy does not require at least one uppercase letter"
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored, 'Description': description, 'ControlId': control}
-    
+
     
     # 1.6 Ensure IAM password policy requires at least one lowercase letter (Scored)
     def control_1_6_password_policy_lowercase(self, passwordpolicy):

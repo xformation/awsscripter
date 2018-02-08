@@ -7,6 +7,7 @@ be set from the input without the data persisting."""
 from __future__ import print_function
 from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.audit.CredReport import CredReport
+from awsscripter.audit.PasswordPolicy import PasswordPolicy
 import logging
 import json
 import csv
@@ -135,10 +136,13 @@ class Auditor(LambdaBase):
         self.logger.info("%s - Auditing Account", self.name)
         cred_reporter = CredReport("us-east-1")
         cred_report = cred_reporter.get_cred_report()
+        passpol = PasswordPolicy()
+        passwordpolicy =passpol.get_account_password_policy()
         # Run individual controls.
         # Comment out unwanted controls
         control1 = []
         control1.append(self.control_1_1_root_use(cred_report))
+        control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
         # Join results
         controls = []
         controls.append(control1)
@@ -208,6 +212,33 @@ class Auditor(LambdaBase):
                 print("Something went wrong")
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_1_5_password_policy_uppercase(self, passwordpolicy):
+        """Summary
+
+        Args:
+            passwordpolicy (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.5"
+        description = "Ensure IAM password policy requires at least one uppercase letter"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            if passwordpolicy['RequireUppercaseCharacters'] is False:
+                result = False
+                failReason = "Password policy does not require at least one uppercase letter"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 1.5 Ensure IAM password policy requires at least one uppercase letter (Scored)
 
     def json_output(controlResult):
         """Summary
