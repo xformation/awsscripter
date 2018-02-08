@@ -16,7 +16,7 @@ class PasswordPolicy():
         """Check if a IAM password policy exists, if not return false
 
         Returns:
-            Account IAM password policy or False
+            Account IAM password policy or Falsel
         """
         try:
             response = Audit.IAM_CLIENT.get_account_password_policy()

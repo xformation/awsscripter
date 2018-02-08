@@ -8,6 +8,8 @@ from __future__ import print_function
 from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.audit.CredReport import CredReport
 from awsscripter.audit.PasswordPolicy import PasswordPolicy
+from awsscripter.audit.CloudTrail import CloudTrail
+
 import logging
 import json
 import csv
@@ -138,19 +140,26 @@ class Auditor(LambdaBase):
         cred_report = cred_reporter.get_cred_report()
         passpol = PasswordPolicy()
         passwordpolicy =passpol.get_account_password_policy()
+        reglist=CloudTrail()
+        regions=reglist.get_regions()
+        cloud_trails=reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
         control1 = []
         control1.append(self.control_1_1_root_use(cred_report))
         control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
+
+        control2 = []
+        control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+
         # Join results
         controls = []
         controls.append(control1)
+        controls.append(control2)
 
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             Auditor.json_output(controls)
-
 
 
     # --- 1 Identity and Access Management ---
@@ -213,6 +222,7 @@ class Auditor(LambdaBase):
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
+    # 1.5 Ensure IAM password policy requires at least one uppercase letter (Scored)
     def control_1_5_password_policy_uppercase(self, passwordpolicy):
         """Summary
 
@@ -238,7 +248,36 @@ class Auditor(LambdaBase):
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    # 1.5 Ensure IAM password policy requires at least one uppercase letter (Scored)
+    # 2.1 Ensure CloudTrail is enabled in all regions (Scored)
+    def control_2_1_ensure_cloud_trail_all_regions(self,cloudtrails):
+            """Summary
+
+            Args:
+                cloudtrails (TYPE): Description
+
+            Returns:
+                TYPE: Description
+            """
+            result = False
+            failReason = ""
+            offenders = []
+            control = "2.1"
+            description = "Ensure CloudTrail is enabled in all regions"
+            scored = True
+            for m, n in cloudtrails.items():
+                for o in n:
+                    if o['IsMultiRegionTrail']:
+                        client = boto3.client('cloudtrail', region_name=m)
+                        response = client.get_trail_status(
+                            Name=o['TrailARN']
+                        )
+                        if response['IsLogging'] is True:
+                            result = True
+                            break
+            if result is False:
+                failReason = "No enabled multi region trails found"
+            return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                    'Description': description, 'ControlId': control}
 
     def json_output(controlResult):
         """Summary
