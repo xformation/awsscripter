@@ -6,6 +6,7 @@ An instance of the class is created for each invocation, so instance fields can
 be set from the input without the data persisting."""
 from __future__ import print_function
 from awsscripter.common.LambdaBase import LambdaBase
+from awsscripter.audit.CredReport import CredReport
 import logging
 import json
 import csv
@@ -23,7 +24,7 @@ from awsscripter.common.helpers import get_external_stack_name
 from awsscripter.hooks import add_audit_hooks
 from awsscripter.resolvers import ResolvableProperty
 
-class MyLambdaClass(LambdaBase):
+class Auditor(LambdaBase):
     # --- Script controls ---
 
     # CIS Benchmark version referenced. Only used in web report.
@@ -131,8 +132,9 @@ class MyLambdaClass(LambdaBase):
     @add_audit_hooks
     def handle(self, event, context):
         # implementation
-        self.logger.info("%s - Creating stack", self.name)
-        cred_report = self.get_cred_report()
+        self.logger.info("%s - Auditing Account", self.name)
+        cred_reporter = CredReport("us-east-1")
+        cred_report = cred_reporter.get_cred_report()
         # Run individual controls.
         # Comment out unwanted controls
         control1 = []
@@ -143,66 +145,9 @@ class MyLambdaClass(LambdaBase):
 
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
-            MyLambdaClass.json_output(controls)
+            Auditor.json_output(controls)
 
 
-    def get_cred_report(self):
-        """Summary
-
-        Returns:
-            TYPE: Description
-        """
-        perform_audit_kwargs = {
-            "Parameters": self._format_parameters(self.parameters),
-            "Capabilities": ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
-            "NotificationARNs": self.notifications,
-            "Tags": [
-                {"Key": str(k), "Value": str(v)}
-                for k, v in self.tags.items()
-            ]
-        }
-        if self.on_failure:
-            perform_audit_kwargs.update({"OnFailure": self.on_failure})
-        x = 0
-        status = ""
-        while self.connection_manager.call(
-            service="iam",
-            command="generate_credential_report",
-            kwargs=perform_audit_kwargs
-        )['State'] != "COMPLETE":
-            time.sleep(2)
-            x += 1
-            # If no credentail report is delivered within this time fail the check.
-            if x > 10:
-                status = "Fail: rootUse - no CredentialReport available."
-                break
-        if "Fail" in status:
-            return status
-        response = self.connection_manager.call(
-            service="iam",
-            command="get_credential_report",
-            kwargs=perform_audit_kwargs
-        )
-        self.logger.debug("Response is ", response)
-        report = []
-        splitted_contents = response['Content'].splitlines()
-        splitted_contents = [x.decode('UTF8') for x in splitted_contents]
-        reader = csv.DictReader(splitted_contents, delimiter=',')
-        for row in reader:
-            report.append(row)
-
-        # Verify if root key's never been used, if so add N/A
-        try:
-            if report[0]['access_key_1_last_used_date']:
-                pass
-        except:
-            report[0]['access_key_1_last_used_date'] = "N/A"
-        try:
-            if report[0]['access_key_2_last_used_date']:
-                pass
-        except:
-            report[0]['access_key_2_last_used_date'] = "N/A"
-        return report
 
     # --- 1 Identity and Access Management ---
 
@@ -282,7 +227,7 @@ class MyLambdaClass(LambdaBase):
                 inner[x] = controlResult[m][n]
             y = controlResult[m][0]['ControlId'].split('.')[0]
             outer[y] = inner
-        if MyLambdaClass.OUTPUT_ONLY_JSON is True:
+        if Auditor.OUTPUT_ONLY_JSON is True:
             print(json.dumps(outer, sort_keys=True, indent=4, separators=(',', ': ')))
         else:
             print("JSON output:")
@@ -291,7 +236,7 @@ class MyLambdaClass(LambdaBase):
             print("-------------------------------------------------------")
             print("\n")
             print("Summary:")
-            print(MyLambdaClass.shortAnnotation(controlResult))
+            print(Auditor.shortAnnotation(controlResult))
             print("\n")
         return 0
 
@@ -329,10 +274,10 @@ class MyLambdaClass(LambdaBase):
             TYPE: Description
         """
         # Get correct region for the TopicARN
-        region = (MyLambdaClass.SNS_TOPIC_ARN.split("sns:", 1)[1]).split(":", 1)[0]
+        region = (Auditor.SNS_TOPIC_ARN.split("sns:", 1)[1]).split(":", 1)[0]
         client = boto3.client('sns', region_name=region)
         client.publish(
-            TopicArn=MyLambdaClass.SNS_TOPIC_ARN,
+            TopicArn=Auditor.SNS_TOPIC_ARN,
             Subject="AWS CIS Benchmark report - " + str(time.strftime("%c")),
             Message=json.dumps({'default': url}),
             MessageStructure='json'
@@ -340,5 +285,5 @@ class MyLambdaClass(LambdaBase):
 
 
 # input values for args and/or kwargs
-handler = MyLambdaClass("myname", "myproject", "us-east-1")
-handler.handle("test","test")
+auditor = Auditor("myname", "myproject", "us-east-1")
+auditor.handle("test","test")

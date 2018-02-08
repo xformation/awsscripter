@@ -78,6 +78,12 @@ class UnknownStackStatusError(awsscripterException):
     pass
 
 
+class UnknownAuditStatusError(awsscripterException):
+    """
+    Error raised if an unknown stack status is received.
+    """
+    pass
+
 class RetryLimitExceededError(awsscripterException):
     """
     Error raised if the request limit is exceeded.
