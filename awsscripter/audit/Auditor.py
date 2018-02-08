@@ -142,6 +142,7 @@ class Auditor(LambdaBase):
         passwordpolicy =passpol.get_account_password_policy()
         reglist=CloudTrail()
         regions=reglist.get_regions()
+        region_list=reglist.get_regions()
         cloud_trails=reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
@@ -151,6 +152,9 @@ class Auditor(LambdaBase):
 
         control2 = []
         control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+
+        control4 = []
+        control4.append(self.control_4_1_ensure_ssh_not_open_to_world(region_list))
 
         # Join results
         controls = []
@@ -278,6 +282,37 @@ class Auditor(LambdaBase):
                 failReason = "No enabled multi region trails found"
             return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                     'Description': description, 'ControlId': control}
+
+    def control_4_1_ensure_ssh_not_open_to_world(self,regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.1"
+        description = "Ensure no security groups allow ingress from 0.0.0.0/0 to port 22"
+        scored = True
+        for n in regions:
+            client = boto3.client('ec2', region_name=n)
+            response = client.describe_security_groups()
+            for m in response['SecurityGroups']:
+                if "0.0.0.0/0" in str(m['IpPermissions']):
+                    for o in m['IpPermissions']:
+                        try:
+                            if int(o['FromPort']) <= 22 <= int(o['ToPort']) and '0.0.0.0/0' in str(o['IpRanges']):
+                                result = False
+                                failReason = "Found Security Group with port 22 open to the world (0.0.0.0/0)"
+                                offenders.append(str(m['GroupId']))
+                        except:
+                            if str(o['IpProtocol']) == "-1" and '0.0.0.0/0' in str(o['IpRanges']):
+                                result = False
+                                failReason = "Found Security Group with port 22 open to the world (0.0.0.0/0)"
+                                offenders.append(str(n) + " : " + str(m['GroupId']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
 
     def json_output(controlResult):
         """Summary
