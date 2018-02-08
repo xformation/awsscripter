@@ -5,24 +5,20 @@ and so are a good way to implement caching.
 An instance of the class is created for each invocation, so instance fields can
 be set from the input without the data persisting."""
 from __future__ import print_function
-from awsscripter.common.LambdaBase import LambdaBase
-from awsscripter.audit.CredReport import CredReport
-import logging
+
 import json
-import csv
-import time
+import logging
 import sys
-import re
-import tempfile
-import getopt
-import os
+import time
 from datetime import datetime
+
 import boto3
 
+from awsscripter.audit.CredReport import CredReport
+from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.common.connection_manager import ConnectionManager
-from awsscripter.common.helpers import get_external_stack_name
 from awsscripter.hooks import add_audit_hooks
-from awsscripter.resolvers import ResolvableProperty
+
 
 class Auditor(LambdaBase):
     # --- Script controls ---
@@ -282,8 +278,3 @@ class Auditor(LambdaBase):
             Message=json.dumps({'default': url}),
             MessageStructure='json'
         )
-
-
-# input values for args and/or kwargs
-auditor = Auditor("myname", "myproject", "us-east-1")
-auditor.handle("test","test")
