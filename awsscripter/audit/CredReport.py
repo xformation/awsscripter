@@ -177,6 +177,7 @@ class CredReport(AwsBase):
         Returns:
             TYPE: Description
         """
+        print ("in cred report")
         perform_audit_kwargs = {
             "Parameters": self._format_parameters(self.parameters),
             "Capabilities": ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
