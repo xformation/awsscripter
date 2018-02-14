@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 
 import botocore
 from dateutil.tz import tzutc
-
 from awsscripter.audit.audit_status import AuditStatus
 from awsscripter.common.AwsBase import AwsBase
 from awsscripter.common.connection_manager import ConnectionManager

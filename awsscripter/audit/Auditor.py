@@ -139,28 +139,28 @@ class Auditor(LambdaBase):
         cred_reporter = CredReport("us-east-1")
         cred_report = cred_reporter.get_cred_report()
         passpol = PasswordPolicy()
-        passwordpolicy =passpol.get_account_password_policy()
-        reglist=CloudTrail()
-        regions=reglist.get_regions()
-        region_list=reglist.get_regions()
-        cloud_trails=reglist.get_cloudtrails(regions)
+        passwordpolicy = passpol.get_account_password_policy()
+        reglist = CloudTrail()
+        regions = reglist.get_regions()
+        region_list = reglist.get_regions()
+        cloud_trails = reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
         control1 = []
         control1.append(self.control_1_1_root_use(cred_report))
         control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
 
-        control2 = []
-        control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+        #control2 = []
+        #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
 
-        control4 = []
-        control4.append(self.control_4_1_ensure_ssh_not_open_to_world(region_list))
+        #control4 = []
+        #control4.append(self.control_4_1_ensure_ssh_not_open_to_world(region_list))
 
         # Join results
         controls = []
         controls.append(control1)
-        controls.append(control2)
-
+        #controls.append(control2)
+        #controls.append(control4)
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             Auditor.json_output(controls)
