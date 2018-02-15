@@ -96,7 +96,7 @@ class PasswordPolicy():
             }
             status = self.connection_manager.call(
                 service="iam",
-                command="generate_credential_report",
+                command="get_account_password_policy",
                 kwargs=perform_audit_kwargs
             )['State']
         except botocore.exceptions.ClientError as exp:
