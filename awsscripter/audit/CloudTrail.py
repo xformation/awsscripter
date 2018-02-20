@@ -32,6 +32,10 @@ class CloudTrail():
         self.dependencies = dependencies or []
         self.tags = tags or {}
 
+    def setRegion(self,region,iam_role=None):
+        self.connection_manager = ConnectionManager(region, iam_role)
+
+
     def _format_parameters(self, parameters):
         """
         Converts CloudFormation parameters to the format used by Boto3.
@@ -127,23 +131,29 @@ class CloudTrail():
         regions = [region['RegionName'] for region in region_response['Regions']]
         return regions
 
-    def get_cloudtrails(slef, regions):
+    def get_cloudtrails(self, regions):
         """Summary
         Returns:
             TYPE: Description
         """
         trails = dict()
-        for n in regions:
-            client = boto3.client('cloudtrail', region_name=n)
-            response = client.describe_trails()
+        for region in regions:
+            self.setRegion(region,iam_role=None)
+            cloudtrail_kwargs = None
+            response = self.connection_manager.call(
+                service="cloudtrail",
+                command="describe_trails",
+                kwargs=cloudtrail_kwargs
+            )
+            print(response)
             temp = []
             for m in response['trailList']:
                 if m['IsMultiRegionTrail'] is True:
-                    if m['HomeRegion'] == n:
+                    if m['HomeRegion'] == m:
                         temp.append(m)
                 else:
                     temp.append(m)
             if len(temp) > 0:
-                trails[n] = temp
+                trails[region] = temp
         return trails
 
