@@ -9,6 +9,7 @@ from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.audit.CredReport import CredReport
 from awsscripter.audit.PasswordPolicy import PasswordPolicy
 from awsscripter.audit.CloudTrail import CloudTrail
+from awsscripter.audit.Controls import Control
 
 import logging
 import json
@@ -87,6 +88,7 @@ class Auditor(LambdaBase):
         self.on_failure = on_failure
         self.dependencies = dependencies or []
         self.tags = tags or {}
+        self.control=Control()
 
     def __repr__(self):
         return (
@@ -140,19 +142,29 @@ class Auditor(LambdaBase):
         cred_report = cred_reporter.get_cred_report()
         passpol = PasswordPolicy()
         passwordpolicy = passpol.get_account_password_policy()
-        reglist = CloudTrail()
-        regions = reglist.get_regions()
-        print(regions)
-        region_list = reglist.get_regions()
-        cloud_trails = reglist.get_cloudtrails(regions)
+        #reglist = CloudTrail()
+        #regions = reglist.get_regions()
+        #print(regions)
+        #region_list = reglist.get_regions()
+        #cloud_trails = reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
         control1 = []
-        control1.append(self.control_1_1_root_use(cred_report))
-        control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
+        #control1.append(self.control.control_1_1_root_use(cred_report))
+        #control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        #control1.append(self.control.control_1_3_unused_credentials(cred_report))
+        #control1.append(self.control.control_1_4_rotated_keys(cred_report))
+        #control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
+        #control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
+        #control1.append(self.control.control_1_7_password_policy_symbol(passwordpolicy))
+        #control1.append(self.control.control_1_8_password_policy_number(passwordpolicy))
+        #control1.append(self.control.control_1_9_password_policy_length(passwordpolicy))
+        #control1.append(self.control.control_1_10_password_policy_reuse(passwordpolicy))
+        #control1.append(self.control.control_1_11_password_policy_expire(passwordpolicy))
+        control1.append(self.control.control_1_14_root_hardware_mfa_enabled())
 
         control2 = []
-        control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+        #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
 
         #control4 = []
         #control4.append(self.control_4_1_ensure_ssh_not_open_to_world(region_list))
@@ -160,7 +172,7 @@ class Auditor(LambdaBase):
         # Join results
         controls = []
         controls.append(control1)
-        controls.append(control2)
+        #controls.append(control2)
         #controls.append(control4)
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
@@ -312,6 +324,31 @@ class Auditor(LambdaBase):
                                 result = False
                                 failReason = "Found Security Group with port 22 open to the world (0.0.0.0/0)"
                                 offenders.append(str(n) + " : " + str(m['GroupId']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_1_6_password_policy_lowercase(self, passwordpolicy):
+        """Summary
+
+        Args:
+            passwordpolicy (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.6"
+        description = "Ensure IAM password policy requires at least one lowercase letter"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            if passwordpolicy['RequireLowercaseCharacters'] is False:
+                result = False
+                failReason = "Password policy does not require at least one uppercase letter"
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
