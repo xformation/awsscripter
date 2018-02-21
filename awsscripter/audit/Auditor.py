@@ -5,16 +5,16 @@ and so are a good way to implement caching.
 An instance of the class is created for each invocation, so instance fields can
 be set from the input without the data persisting."""
 from __future__ import print_function
-
 import json
 import logging
 import sys
 import time
 from datetime import datetime
-
 import boto3
 
 from awsscripter.audit.CredReport import CredReport
+from awsscripter.audit.PasswordPolicy import PasswordPolicy
+from awsscripter.audit.CloudTrail import CloudTrail
 from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.common.connection_manager import ConnectionManager
 from awsscripter.hooks import add_audit_hooks
@@ -22,7 +22,6 @@ from awsscripter.hooks import add_audit_hooks
 
 class Auditor(LambdaBase):
     # --- Script controls ---
-
     # CIS Benchmark version referenced. Only used in web report.
     AWS_CIS_BENCHMARK_VERSION = "1.1"
 
@@ -131,13 +130,22 @@ class Auditor(LambdaBase):
         self.logger.info("%s - Auditing Account", self.name)
         cred_reporter = CredReport("us-east-1")
         cred_report = cred_reporter.get_cred_report()
-        # Run individual controls.
+        objpasswd = PasswordPolicy()
+        password_policy = objpasswd.get_account_password_policy()
+        obj = CloudTrail()
+        reg = obj.get_regions()
+        cloud_trails = obj.get_cloudtrails(reg)
+
         # Comment out unwanted controls
         control1 = []
         control1.append(self.control_1_1_root_use(cred_report))
-        # Join results
+        control1.append(self.control_1_5_password_policy_uppercase(password_policy))
+        #defining control 2
+        control2 = []
+        control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
         controls = []
         controls.append(control1)
+        controls.append(control2)
 
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
@@ -205,6 +213,61 @@ class Auditor(LambdaBase):
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
+    def control_1_5_password_policy_uppercase(self, passwordpolicy):
+        """Summary
+
+        Args:
+            passwordpolicy (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.5"
+        description = "Ensure IAM password policy requires at least one uppercase letter"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            if passwordpolicy['RequireUppercaseCharacters'] is False:
+                result = False
+                failReason = "Password policy does not require at least one uppercase letter"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_2_1_ensure_cloud_trail_all_regions(self, cloudtrails):
+        """Summary
+
+        Args:
+            cloudtrails (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = False
+        failReason = ""
+        offenders = []
+        control = "2.1"
+        description = "Ensure CloudTrail is enabled in all regions"
+        scored = True
+        for m, n in cloudtrails.items():
+            for o in n:
+                if o['IsMultiRegionTrail']:
+                    client = boto3.client('cloudtrail', region_name=m)
+                    response = client.get_trail_status(
+                        Name=o['TrailARN']
+                    )
+                    if response['IsLogging'] is True:
+                        result = True
+                        break
+        if result is False:
+            failReason = "No enabled multi region trails found"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
     def json_output(controlResult):
         """Summary
 
@@ -228,7 +291,7 @@ class Auditor(LambdaBase):
         else:
             print("JSON output:")
             print("-------------------------------------------------------")
-            print(json.dumps(outer, sort_keys=True, indent=4, separators=(',', ': ')))
+            print(json.dumps(outer, sort_keys=True, indent=4,  separators=(',', ': ')))
             print("-------------------------------------------------------")
             print("\n")
             print("Summary:")
@@ -278,3 +341,7 @@ class Auditor(LambdaBase):
             Message=json.dumps({'default': url}),
             MessageStructure='json'
         )
+
+
+auditor = Auditor("myname","myporject","us-east-1")
+auditor.handle("test","test")

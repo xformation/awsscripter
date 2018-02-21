@@ -8,8 +8,9 @@ with audit.
 
 """
 
-import logging
+
 from __future__ import print_function
+import logging
 import json
 import csv
 import time
@@ -913,35 +914,7 @@ class Audit(object):
     # --- 2 Logging ---
     
     # 2.1 Ensure CloudTrail is enabled in all regions (Scored)
-    def control_2_1_ensure_cloud_trail_all_regions(self, cloudtrails):
-        """Summary
-    
-        Args:
-            cloudtrails (TYPE): Description
-    
-        Returns:
-            TYPE: Description
-        """
-        result = False
-        failReason = ""
-        offenders = []
-        control = "2.1"
-        description = "Ensure CloudTrail is enabled in all regions"
-        scored = True
-        for m, n in cloudtrails.items():
-            for o in n:
-                if o['IsMultiRegionTrail']:
-                    client = boto3.client('cloudtrail', region_name=m)
-                    response = client.get_trail_status(
-                        Name=o['TrailARN']
-                    )
-                    if response['IsLogging'] is True:
-                        result = True
-                        break
-        if result is False:
-            failReason = "No enabled multi region trails found"
-        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored, 'Description': description, 'ControlId': control}
-    
+
     
     # 2.2 Ensure CloudTrail log file validation is enabled (Scored)
     def control_2_2_ensure_cloudtrail_validation(cloudtrails):
