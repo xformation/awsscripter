@@ -138,6 +138,7 @@ class CloudTrail():
         """
         trails = dict()
         for region in regions:
+            print(region)
             self.setRegion(region,iam_role=None)
             cloudtrail_kwargs = None
             response = self.connection_manager.call(
@@ -149,7 +150,7 @@ class CloudTrail():
             temp = []
             for m in response['trailList']:
                 if m['IsMultiRegionTrail'] is True:
-                    if m['HomeRegion'] == m:
+                    if m['HomeRegion'] == region:
                         temp.append(m)
                 else:
                     temp.append(m)
