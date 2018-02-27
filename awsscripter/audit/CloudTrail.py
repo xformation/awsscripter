@@ -139,7 +139,7 @@ class CloudTrail():
                 kwargs = perform_audit_kwargs
                 )
             # region_response = client.describe_regions()
-            print(region_response)
+            #print(region_response)
             regions = [region['RegionName'] for region in region_response['Regions']]
             return regions
 
@@ -159,7 +159,7 @@ class CloudTrail():
             )
             #client = boto3.client('cloudtrail', region_name=n)
             #response = client.describe_trails()
-            print(response)
+            #print(response)
             temp = []
             for m in response['trailList']:
                 if m['IsMultiRegionTrail'] is True:

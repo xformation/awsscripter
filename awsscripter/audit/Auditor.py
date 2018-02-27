@@ -144,20 +144,20 @@ class Auditor(LambdaBase):
 
         # Run individual controls.
         # Comment out unwanted controls
-        control1 = []
-        control1.append(self.control_1_1_root_use(cred_report))
-        control1.append(self.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        control1.append(self.control_1_3_unused_credentials(cred_report))
-        control1.append(self.control_1_4_rotated_keys(cred_report))
-        control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
-        control1.append(self.control_1_6_password_policy_lowercase(passwordpolicy))
-        control1.append(self.control_1_7_password_policy_symbol(passwordpolicy))
-        control1.append(self.control_1_8_password_policy_number(passwordpolicy))
-        control1.append(self.control_1_9_password_policy_length(passwordpolicy))
-        control1.append(self.control_1_10_password_policy_reuse(passwordpolicy))
-        control1.append(self.control_1_11_password_policy_expire(passwordpolicy))
-        control1.append(self.control_1_12_root_key_exists(cred_report))
-        control1.append(self.control_1_13_root_mfa_enabled())
+        #control1 = []
+        #control1.append(self.control_1_1_root_use(cred_report))
+        #control1.append(self.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        #control1.append(self.control_1_3_unused_credentials(cred_report))
+        #control1.append(self.control_1_4_rotated_keys(cred_report))
+        #control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
+        #control1.append(self.control_1_6_password_policy_lowercase(passwordpolicy))
+        #control1.append(self.control_1_7_password_policy_symbol(passwordpolicy))
+        #control1.append(self.control_1_8_password_policy_number(passwordpolicy))
+        #control1.append(self.control_1_9_password_policy_length(passwordpolicy))
+        #control1.append(self.control_1_10_password_policy_reuse(passwordpolicy))
+        #control1.append(self.control_1_11_password_policy_expire(passwordpolicy))
+        #control1.append(self.control_1_12_root_key_exists(cred_report))
+        #control1.append(self.control_1_13_root_mfa_enabled())
         #control1.append(self.control_1_14_root_hardware_mfa_enabled())
         #control1.append(self.control_1_15_security_questions_registered())
         #control1.append(self.control_1_16_no_policies_on_iam_users())
@@ -169,7 +169,7 @@ class Auditor(LambdaBase):
         #control1.append(self.control_1_22_ensure_incident_management_roles())
         #control1.append(self.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
         #control1.append(self.control_1_24_no_overly_permissive_policies())
-        control2 = []
+        #control2 = []
         #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloudtrails))
         #control2.append(self.control_2_2_ensure_cloudtrail_validation(cloudtrails))
         #control2.append(self.control_2_3_ensure_cloudtrail_bucket_not_public(cloudtrails))
@@ -178,7 +178,7 @@ class Auditor(LambdaBase):
         #control2.append(self.control_2_6_ensure_cloudtrail_bucket_logging(cloudtrails))
         #control2.append(self.control_2_7_ensure_cloudtrail_encryption_kms(cloudtrails))
         #control2.append(self.control_2_8_ensure_kms_cmk_rotation(region_list))
-        control3 = []
+        #control3 = []
         #control3.append(self.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloudtrails))
         #control3.append(self.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloudtrails))
         #control3.append(self.control_3_3_ensure_log_metric_filter_root_usage(cloudtrails))
@@ -198,11 +198,11 @@ class Auditor(LambdaBase):
         control4.append(self.control_4_1_ensure_ssh_not_open_to_world(region_list))
         control4.append(self.control_4_2_ensure_rdp_not_open_to_world(region_list))
         control4.append(self.control_4_3_ensure_flow_logs_enabled_on_all_vpc(region_list))
-        #control4.append(self.control_4_4_ensure_default_security_groups_restricts_traffic(region_list))
+        control4.append(self.control_4_4_ensure_default_security_groups_restricts_traffic(region_list))
         control4.append(self.control_4_5_ensure_route_tables_are_least_access(region_list))
         # Join results
         controls = []
-        controls.append(control1)
+        #controls.append(control1)
         #controls.append(control2)
         #controls.append(control3)
         controls.append(control4)
@@ -752,10 +752,14 @@ class Auditor(LambdaBase):
                     pagedResult.append(n)
             offenders = []
             for n in pagedResult:
-                policies = Audit.IAM_CLIENT.list_user_policies(
-                    UserName=n['UserName'],
-                    MaxItems=1
-                )
+                UserName = n['UserName']
+                #policies = Audit.IAM_CLIENT.list_user_policies(
+                policy_kwargs = {
+                    "UserName": UserName,
+                    "MaxItems": 1
+                }
+
+                #)
                 if policies['PolicyNames'] != []:
                     result = False
                     failReason = "IAM user have inline policy attached"
@@ -2068,8 +2072,9 @@ class Auditor(LambdaBase):
             for m in flowlogs['FlowLogs']:
                 if "vpc-" in str(m['ResourceId']):
                     activeLogs.append(m['ResourceId'])
-            vpcs = client.describe_vpcs(
-                Filters=[
+            #vpcs = client.describe_vpcs(
+            ec2_kwargs = {
+                "Filters" : [
                     {
                         'Name': 'state',
                         'Values': [
@@ -2077,6 +2082,11 @@ class Auditor(LambdaBase):
                         ]
                     },
                 ]
+            }
+            vpcs = self.connection_manager.call(
+                service="ec2",
+                command="describe_vpcs",
+                kwargs=ec2_kwargs
             )
             for m in vpcs['Vpcs']:
                 if not str(m['VpcId']) in str(activeLogs):
@@ -2100,9 +2110,10 @@ class Auditor(LambdaBase):
         description = "Ensure the default security group of every VPC restricts all traffic"
         scored = True
         for n in regions:
-            client = boto3.client('ec2', region_name=n)
-            response = client.describe_security_groups(
-                Filters=[
+            #client = boto3.client('ec2', region_name=n)
+            #response = client.describe_security_groups(
+            ec2_kwargs = {
+                "Filters" : [
                     {
                         'Name': 'group-name',
                         'Values': [
@@ -2110,6 +2121,12 @@ class Auditor(LambdaBase):
                         ]
                     },
                 ]
+            }
+
+            response = self.connection_manager.call(
+                service="ec2",
+                command="describe_security_groups",
+                kwargs=ec2_kwargs
             )
             for m in response['SecurityGroups']:
                 if not (len(m['IpPermissions']) + len(m['IpPermissionsEgress'])) == 0:
