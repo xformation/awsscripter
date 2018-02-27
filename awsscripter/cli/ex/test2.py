@@ -3,7 +3,7 @@ import click
 
 @click.group(name="group_method", chain=True)
 def group_method():
-    """ math functions"""
+    """ math_ex functions"""
     pass
 
 

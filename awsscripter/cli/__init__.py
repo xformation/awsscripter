@@ -18,9 +18,10 @@ from awsscripter.cli.stack.stack import stack_group
 from awsscripter.cli.testcommand.testcommand import testcommand_group
 from awsscripter.stack.helpers import  setup_logging, catch_exceptions
 from awsscripter import __version__
-from awsscripter.cli.security.security import security_group
 from awsscripter.cli.ex.test1 import cli_com
 from awsscripter.cli.ex.test2 import group_method
+from awsscripter.cli.ex.test3 import repeat
+
 
 
 @click.group()
@@ -88,6 +89,6 @@ cli.add_command(init_group)
 cli.add_command(audit_group)
 cli.add_command(stack_group)
 cli.add_command(testcommand_group)
-cli.add_command(security_group)
+cli.add_command(repeat)
 cli.add_command(cli_com)
 cli.add_command(group_method)

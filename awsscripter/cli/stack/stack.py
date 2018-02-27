@@ -11,6 +11,7 @@ from awsscripter.cli.stack.status import status_command
 from awsscripter.cli.stack.template import validate_command, generate_command
 from awsscripter.cli.stack.update import update_command
 
+
 @click.group(name="stack")
 def stack_group():
     """
@@ -18,6 +19,8 @@ def stack_group():
 
     """
     pass
+
+
 stack_group.add_command(create_command)
 stack_group.add_command(delete_command)
 stack_group.add_command(describe_group)
