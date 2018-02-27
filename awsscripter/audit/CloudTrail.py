@@ -109,15 +109,6 @@ class CloudTrail():
         Returns:
         TYPE: Description
         """
-        """perform_audit_kwargs = {
-            "Parameters": self._format_parameters(self.parameters),
-            "Capabilities": ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
-            "NotificationARNs": self.notifications,
-            "Tags": [
-                {"Key": str(k), "Value": str(v)}
-                for k, v in self.tags.items()
-                ]
-        }"""
         perform_audit_kwargs = None
 
         #client = boto3.client('ec2')

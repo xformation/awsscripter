@@ -134,7 +134,7 @@ class CredReport(AwsBase):
         Returns:
             TYPE: Description
         """
-        self.generate_cred_report();
+        self.generate_cred_report()
         perform_audit_kwargs = {
             "Parameters": self._format_parameters(self.parameters),
             "Capabilities": ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
@@ -149,6 +149,8 @@ class CredReport(AwsBase):
             command="get_credential_report",
             kwargs=perform_audit_kwargs
         )
+        print("credreport")
+        print(response)
         self.logger.debug("Response is ", response)
         report = []
         splitted_contents = response['Content'].splitlines()

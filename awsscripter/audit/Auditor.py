@@ -88,7 +88,7 @@ class Auditor(LambdaBase):
         self.on_failure = on_failure
         self.dependencies = dependencies or []
         self.tags = tags or {}
-        self.control=Control()
+        self.control=Control(parameters)
 
     def __repr__(self):
         return (
@@ -150,18 +150,30 @@ class Auditor(LambdaBase):
         # Run individual controls.
         # Comment out unwanted controls
         control1 = []
-        #control1.append(self.control.control_1_1_root_use(cred_report))
-        #control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        #control1.append(self.control.control_1_3_unused_credentials(cred_report))
-        #control1.append(self.control.control_1_4_rotated_keys(cred_report))
-        #control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
-        #control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
-        #control1.append(self.control.control_1_7_password_policy_symbol(passwordpolicy))
-        #control1.append(self.control.control_1_8_password_policy_number(passwordpolicy))
-        #control1.append(self.control.control_1_9_password_policy_length(passwordpolicy))
-        #control1.append(self.control.control_1_10_password_policy_reuse(passwordpolicy))
-        #control1.append(self.control.control_1_11_password_policy_expire(passwordpolicy))
+        control1.append(self.control.control_1_1_root_use(cred_report))
+        control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control.control_1_3_unused_credentials(cred_report))
+        control1.append(self.control.control_1_4_rotated_keys(cred_report))
+        control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
+        control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
+        control1.append(self.control.control_1_7_password_policy_symbol(passwordpolicy))
+        control1.append(self.control.control_1_8_password_policy_number(passwordpolicy))
+        control1.append(self.control.control_1_9_password_policy_length(passwordpolicy))
+        control1.append(self.control.control_1_10_password_policy_reuse(passwordpolicy))
+        control1.append(self.control.control_1_11_password_policy_expire(passwordpolicy))
+        control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control.control_1_13_root_mfa_enabled())
         control1.append(self.control.control_1_14_root_hardware_mfa_enabled())
+        control1.append(self.control.control_1_15_security_questions_registered())
+        control1.append(self.control.control_1_16_no_policies_on_iam_users())
+        control1.append(self.control.control_1_17_detailed_billing_enabled())
+        control1.append(self.control.control_1_18_ensure_iam_master_and_manager_roles())
+        control1.append(self.control.control_1_19_maintain_current_contact_details())
+        control1.append(self.control.control_1_21_ensure_iam_instance_roles_used())
+        control1.append(self.control.control_1_22_ensure_incident_management_roles())
+        control1.append(self.control.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
+        control1.append(self.control.control_1_24_no_overly_permissive_policies())
+
 
         control2 = []
         #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))

@@ -8,8 +8,90 @@ from datetime import datetime
 import boto3
 
 class Control():
-    def __init__(self):
-        self.connection_manager=ConnectionManager(region="us-east-1")
+    # --- Script controls ---
+
+    # CIS Benchmark version referenced. Only used in web report.
+    AWS_CIS_BENCHMARK_VERSION = "1.1"
+
+    # Would you like a HTML file generated with the result?
+    # This file will be delivered using a signed URL.
+    S3_WEB_REPORT = True
+
+    # Where should the report be delivered to?
+    # Make sure to update permissions for the Lambda role if you change bucket name.
+    S3_WEB_REPORT_BUCKET = "CHANGE_ME_TO_YOUR_S3_BUCKET"
+
+    # Create separate report files?
+    # This will add date and account number as prefix. Example: cis_report_111111111111_161220_1213.html
+    S3_WEB_REPORT_NAME_DETAILS = True
+
+    # How many hours should the report be available? Default = 168h/7days
+    S3_WEB_REPORT_EXPIRE = "168"
+
+    # Set to true if you wish to anonymize the account number in the report.
+    # This is mostly used for demo/sharing purposes.
+    S3_WEB_REPORT_OBFUSCATE_ACCOUNT = False
+
+    # Would  you like to send the report signedURL to an SNS topic
+    SEND_REPORT_URL_TO_SNS = False
+    SNS_TOPIC_ARN = "CHANGE_ME_TO_YOUR_TOPIC_ARN"
+
+    # Would you like to print the results as JSON to output?
+    SCRIPT_OUTPUT_JSON = True
+
+    # Would you like to supress all output except JSON result?
+    # Can be used when you want to pipe result to another system.
+    # If using S3 reporting, please enable SNS integration to get S3 signed URL
+    OUTPUT_ONLY_JSON = False
+
+    # Control 1.1 - Days allowed since use of root account.
+    CONTROL_1_1_DAYS = 0
+
+    """def __init__(self,parameter=None):
+        self.connection_manager = ConnectionManager(region="us-east-1")
+        self.parameter = "list_virtual_mfa_devices
+    """""
+    def __init__(
+            self, region="us-east-1", iam_role=None,
+            parameters=None, awsscripter_user_data=None, hooks=None, s3_details=None,
+            dependencies=None, role_arn=None, protected=False, tags=None,
+            notifications=None, on_failure=None
+    ):
+        #self.logger = logging.getLogger(__name__)
+        self.connection_manager = ConnectionManager(region, iam_role)
+        self.hooks = hooks or {}
+        self.parameters = parameters or {}
+        self.awsscripter_user_data = awsscripter_user_data or {}
+        self.notifications = notifications or []
+        self.s3_details = s3_details
+        self.protected = protected
+        self.role_arn = role_arn
+        self.on_failure = on_failure
+        self.dependencies = dependencies or []
+        self.tags = tags or {}
+
+
+    def _format_parameters(self, parameters):
+        """
+        Converts CloudFormation parameters to the format used by Boto3.
+
+        :param parameters: A dictionary of parameters.
+        :type parameters: dict
+        :returns: A list of the formatted parameters.
+        :rtype: list
+        """
+        formatted_parameters = []
+        for name, value in parameters.items():
+            if value is None:
+                continue
+            if isinstance(value, list):
+                value = ",".join(value)
+            formatted_parameters.append({
+                "ParameterKey": name,
+                "ParameterValue": value
+            })
+
+        return formatted_parameters
     # --- 1 Identity and Access Management ---
 
     # 1.1 Avoid the use of the "root" account (Scored)
@@ -36,7 +118,7 @@ class Control():
 
         try:
             pwdDelta = (datetime.strptime(now, frm) - datetime.strptime(credreport[0]['password_last_used'], frm))
-            if (pwdDelta.days == Audit.Audit.CONTROL_1_1_DAYS) & (pwdDelta.seconds > 0):  # Used within last 24h
+            if (pwdDelta.days == self.CONTROL_1_1_DAYS) & (pwdDelta.seconds > 0):  # Used within last 24h
                 failReason = "Used within 24h"
                 result = False
         except:
@@ -48,7 +130,7 @@ class Control():
         try:
             key1Delta = (
             datetime.strptime(now, frm) - datetime.strptime(credreport[0]['access_key_1_last_used_date'], frm))
-            if (key1Delta.days == Audit.CONTROL_1_1_DAYS) & (key1Delta.seconds > 0):  # Used within last 24h
+            if (key1Delta.days == self.CONTROL_1_1_DAYS) & (key1Delta.seconds > 0):  # Used within last 24h
                 failReason = "Used within 24h"
                 result = False
         except:
@@ -59,7 +141,7 @@ class Control():
         try:
             key2Delta = datetime.strptime(now, frm) - datetime.strptime(credreport[0]['access_key_2_last_used_date'],
                                                                         frm)
-            if (key2Delta.days == Audit.CONTROL_1_1_DAYS) & (key2Delta.seconds > 0):  # Used within last 24h
+            if (key2Delta.days == self.CONTROL_1_1_DAYS) & (key2Delta.seconds > 0):  # Used within last 24h
                 failReason = "Used within 24h"
                 result = False
         except:
@@ -449,7 +531,11 @@ class Control():
         control = "1.13"
         description = "Ensure MFA is enabled for the root account"
         scored = True
-        response = Audit.IAM_CLIENT.get_account_summary()
+        response = self.connection_manager.call(
+            service='iam',
+            command='get_account_summary',
+            kwargs=None
+        )#Audit.IAM_CLIENT.get_account_summary()
         if response['SummaryMap']['AccountMFAEnabled'] != 1:
             result = False
             failReason = "Root account not using MFA"
@@ -476,11 +562,14 @@ class Control():
             kwargs=None
         )
         #Audit.IAM_CLIENT.get_account_summary()
+        mfa_kwargs = {
+            "operation_name": 'list_virtual_mfa_devices'
+        }
         if response['SummaryMap']['AccountMFAEnabled'] == 1:
             paginator = self.connection_manager.call(
                 service='iam',
-                command='get_paginator(list_virtual_mfa_devices)',
-                kwargs=None
+                command='get_paginator',
+                kwargs=mfa_kwargs
             )
 
             #Audit.IAM_CLIENT.get_paginator('list_virtual_mfa_devices')
@@ -530,7 +619,15 @@ class Control():
         control = "1.16"
         description = "Ensure IAM policies are attached only to groups or roles"
         scored = True
-        paginator = Audit.IAM_CLIENT.get_paginator('list_users')
+        #paginator = Audit.IAM_CLIENT.get_paginator('list_users')
+        group_kwargs = {
+            "operation_name" : 'list_users'
+        }
+        paginator = self.connection_manager.call(
+            service='iam',
+            command='get_paginator',
+            kwargs=group_kwargs
+        )
         response_iterator = paginator.paginate()
         pagedResult = []
         for page in response_iterator:
@@ -538,10 +635,18 @@ class Control():
                 pagedResult.append(n)
         offenders = []
         for n in pagedResult:
-            policies = Audit.IAM_CLIENT.list_user_policies(
-                UserName=n['UserName'],
-                MaxItems=1
+            UserName=n['UserName']
+            #policies = Audit.IAM_CLIENT.list_user_policies(
+            policy_kwargs={
+                    "UserName":UserName,
+                    "MaxItems": 1
+            }
+            policies=self.connection_manager.call(
+                service="iam",
+                command="list_user_policies",
+                kwargs=policy_kwargs
             )
+            #)
             if policies['PolicyNames'] != []:
                 result = False
                 failReason = "IAM user have inline policy attached"
@@ -630,8 +735,12 @@ class Control():
         description = "Ensure IAM instance roles are used for AWS resource access from instances, application code is not audited"
         scored = True
         failReason = "Instance not assigned IAM role for EC2"
-        client = boto3.client('ec2')
-        response = client.describe_instances()
+        #client = boto3.client('ec2')
+        response = self.connection_manager.call(
+            service='ec2',
+            command='describe_instances',
+            kwargs=None
+        )#client.describe_instances()
         offenders = []
         for n, _ in enumerate(response['Reservations']):
             try:
@@ -657,10 +766,20 @@ class Control():
         description = "Ensure a support role has been created to manage incidents with AWS Support"
         scored = True
         offenders = []
+        policy_kwargs = {
+            "PolicyArn": 'arn:aws:iam::aws:policy/AWSSupportAccess'
+        }
         try:
-            response = Audit.IAM_CLIENT.list_entities_for_policy(
-                PolicyArn='arn:aws:iam::aws:policy/AWSSupportAccess'
+            # policy_kwargs={
+            #     "PolicyArn" : 'arn:aws:iam::aws:policy/AWSSupportAccess'
+            # }
+            response = self.connection_manager.call(
+                service = 'iam',
+                command = 'list_entities_for_policy',
+                kwargs = policy_kwargs
             )
+            # Audit.IAM_CLIENT.list_entities_for_policy(
+            # PolicyArn='arn:aws:iam::aws:policy/AWSSupportAccess'
             if (len(response['PolicyGroups']) + len(response['PolicyUsers']) + len(response['PolicyRoles'])) == 0:
                 result = False
                 failReason = "No user, group or role assigned AWSSupportAccess"
@@ -685,9 +804,17 @@ class Control():
         scored = False
         offenders = []
         for n, _ in enumerate(credreport):
+            user_kwargs={
+                "UserName" : str(credreport[n]['user'])
+            }
             if (credreport[n]['access_key_1_active'] or credreport[n]['access_key_2_active'] == 'true') and n > 0:
-                response = Audit.IAM_CLIENT.list_access_keys(
-                    UserName=str(credreport[n]['user'])
+                # response = Audit.IAM_CLIENT.list_access_keys(
+                #     UserName=str(credreport[n]['user'])
+                # )
+                response = self.connection_manager.call(
+                    service = 'iam',
+                    command='list_access_keys',
+                    kwargs=user_kwargs
                 )
                 for m in response['AccessKeyMetadata']:
                     if re.sub(r"\s", "T", str(m['CreateDate'])) == credreport[n]['user_creation_time']:
@@ -711,7 +838,14 @@ class Control():
         description = "Ensure IAM policies that allow full administrative privileges are not created"
         scored = True
         offenders = []
-        paginator = Audit.IAM_CLIENT.get_paginator('list_policies')
+        page_kwargs={
+            "operation_name": 'list_policies'
+        }
+        paginator = self.connection_manager.call(
+            service='iam',
+            command='get_paginator',
+            kwargs=page_kwargs
+        )#Audit.IAM_CLIENT.get_paginator('list_policies')
         response_iterator = paginator.paginate(
             Scope='Local',
             OnlyAttached=False,
@@ -721,10 +855,19 @@ class Control():
             for n in page['Policies']:
                 pagedResult.append(n)
         for m in pagedResult:
-            policy = Audit.IAM_CLIENT.get_policy_version(
-                PolicyArn=m['Arn'],
-                VersionId=m['DefaultVersionId']
+            policy_args={
+                "PolicyArn" : m['Arn'],
+                "VersionId" : m['DefaultVersionId']
+            }
+            policy = self.connection_manager.call(
+                service='iam',
+                command='get_policy_version',
+                kwargs=policy_args
             )
+            # Audit.IAM_CLIENT.get_policy_version(
+            #     PolicyArn=m['Arn'],
+            #     VersionId=m['DefaultVersionId']
+
 
             statements = []
             # a policy may contain a single statement, a single statement in an array, or multiple statements in an array
