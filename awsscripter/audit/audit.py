@@ -7,9 +7,9 @@ This module implements a Audit class, which stores data and logic associated
 with audit.
 
 """
-
-import logging
 from __future__ import print_function
+import logging
+
 import json
 import csv
 import time
