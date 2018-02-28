@@ -1888,9 +1888,11 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # --- Networking ---
+    def setRegion(self, region, iam_role=None):
+        self.connection_manager = ConnectionManager(region, iam_role)
 
     # 4.1 Ensure no security groups allow ingress from 0.0.0.0/0 to port 22 (Scored)
-    def control_4_1_ensure_ssh_not_open_to_world(regions):
+    def control_4_1_ensure_ssh_not_open_to_world(self,regions):
         """Summary
 
         Returns:
@@ -1903,8 +1905,14 @@ class Control():
         description = "Ensure no security groups allow ingress from 0.0.0.0/0 to port 22"
         scored = True
         for n in regions:
-            client = boto3.client('ec2', region_name=n)
-            response = client.describe_security_groups()
+            self.setRegion(n, iam_role=None)
+            # client = boto3.client('ec2', region_name=n)
+            # response = client.describe_security_groups()
+            response=self.connection_manager.call(
+                service="ec2",
+                command="describe_security_groups",
+                kwargs=None
+            )
             for m in response['SecurityGroups']:
                 if "0.0.0.0/0" in str(m['IpPermissions']):
                     for o in m['IpPermissions']:
@@ -1922,7 +1930,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 4.2 Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389 (Scored)
-    def control_4_2_ensure_rdp_not_open_to_world(regions):
+    def control_4_2_ensure_rdp_not_open_to_world(self,regions):
         """Summary
 
         Returns:

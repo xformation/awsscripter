@@ -142,50 +142,51 @@ class Auditor(LambdaBase):
         cred_report = cred_reporter.get_cred_report()
         passpol = PasswordPolicy()
         passwordpolicy = passpol.get_account_password_policy()
-        #reglist = CloudTrail()
-        #regions = reglist.get_regions()
+        reglist = CloudTrail()
+        regions = reglist.get_regions()
         #print(regions)
-        #region_list = reglist.get_regions()
+        region_list = reglist.get_regions()
         #cloud_trails = reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
-        control1 = []
-        control1.append(self.control.control_1_1_root_use(cred_report))
-        control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        control1.append(self.control.control_1_3_unused_credentials(cred_report))
-        control1.append(self.control.control_1_4_rotated_keys(cred_report))
-        control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
-        control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
-        control1.append(self.control.control_1_7_password_policy_symbol(passwordpolicy))
-        control1.append(self.control.control_1_8_password_policy_number(passwordpolicy))
-        control1.append(self.control.control_1_9_password_policy_length(passwordpolicy))
-        control1.append(self.control.control_1_10_password_policy_reuse(passwordpolicy))
-        control1.append(self.control.control_1_11_password_policy_expire(passwordpolicy))
-        control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        control1.append(self.control.control_1_13_root_mfa_enabled())
-        control1.append(self.control.control_1_14_root_hardware_mfa_enabled())
-        control1.append(self.control.control_1_15_security_questions_registered())
-        control1.append(self.control.control_1_16_no_policies_on_iam_users())
-        control1.append(self.control.control_1_17_detailed_billing_enabled())
-        control1.append(self.control.control_1_18_ensure_iam_master_and_manager_roles())
-        control1.append(self.control.control_1_19_maintain_current_contact_details())
-        control1.append(self.control.control_1_21_ensure_iam_instance_roles_used())
-        control1.append(self.control.control_1_22_ensure_incident_management_roles())
-        control1.append(self.control.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
-        control1.append(self.control.control_1_24_no_overly_permissive_policies())
+        # control1 = []
+        # control1.append(self.control.control_1_1_root_use(cred_report))
+        # control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        # control1.append(self.control.control_1_3_unused_credentials(cred_report))
+        # control1.append(self.control.control_1_4_rotated_keys(cred_report))
+        # control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
+        # control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
+        # control1.append(self.control.control_1_7_password_policy_symbol(passwordpolicy))
+        # control1.append(self.control.control_1_8_password_policy_number(passwordpolicy))
+        # control1.append(self.control.control_1_9_password_policy_length(passwordpolicy))
+        # control1.append(self.control.control_1_10_password_policy_reuse(passwordpolicy))
+        # control1.append(self.control.control_1_11_password_policy_expire(passwordpolicy))
+        # control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        # control1.append(self.control.control_1_13_root_mfa_enabled())
+        # control1.append(self.control.control_1_14_root_hardware_mfa_enabled())
+        # control1.append(self.control.control_1_15_security_questions_registered())
+        # control1.append(self.control.control_1_16_no_policies_on_iam_users())
+        # control1.append(self.control.control_1_17_detailed_billing_enabled())
+        # control1.append(self.control.control_1_18_ensure_iam_master_and_manager_roles())
+        # control1.append(self.control.control_1_19_maintain_current_contact_details())
+        # control1.append(self.control.control_1_21_ensure_iam_instance_roles_used())
+        # control1.append(self.control.control_1_22_ensure_incident_management_roles())
+        # control1.append(self.control.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
+        # control1.append(self.control.control_1_24_no_overly_permissive_policies())
 
 
         control2 = []
         #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
 
-        #control4 = []
-        #control4.append(self.control_4_1_ensure_ssh_not_open_to_world(region_list))
+        control4 = []
+        control4.append(self.control.control_4_1_ensure_ssh_not_open_to_world(region_list))
+        control4.append(self.control_4_2_ensure_rdp_not_open_to_world(region_list))
 
         # Join results
         controls = []
-        controls.append(control1)
+        #controls.append(control1)
         #controls.append(control2)
-        #controls.append(control4)
+        controls.append(control4)
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             Auditor.json_output(controls)
@@ -308,37 +309,6 @@ class Auditor(LambdaBase):
             return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                     'Description': description, 'ControlId': control}
 
-    def control_4_1_ensure_ssh_not_open_to_world(self,regions):
-        """Summary
-
-        Returns:
-            TYPE: Description
-        """
-        result = True
-        failReason = ""
-        offenders = []
-        control = "4.1"
-        description = "Ensure no security groups allow ingress from 0.0.0.0/0 to port 22"
-        scored = True
-        for n in regions:
-            client = boto3.client('ec2', region_name=n)
-            response = client.describe_security_groups()
-            for m in response['SecurityGroups']:
-                if "0.0.0.0/0" in str(m['IpPermissions']):
-                    for o in m['IpPermissions']:
-                        try:
-                            if int(o['FromPort']) <= 22 <= int(o['ToPort']) and '0.0.0.0/0' in str(o['IpRanges']):
-                                result = False
-                                failReason = "Found Security Group with port 22 open to the world (0.0.0.0/0)"
-                                offenders.append(str(m['GroupId']))
-                        except:
-                            if str(o['IpProtocol']) == "-1" and '0.0.0.0/0' in str(o['IpRanges']):
-                                result = False
-                                failReason = "Found Security Group with port 22 open to the world (0.0.0.0/0)"
-                                offenders.append(str(n) + " : " + str(m['GroupId']))
-        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
-                'Description': description, 'ControlId': control}
-
     def control_1_6_password_policy_lowercase(self, passwordpolicy):
         """Summary
 
@@ -361,6 +331,38 @@ class Auditor(LambdaBase):
             if passwordpolicy['RequireLowercaseCharacters'] is False:
                 result = False
                 failReason = "Password policy does not require at least one uppercase letter"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+        # 4.2 Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389 (Scored)
+
+    def control_4_2_ensure_rdp_not_open_to_world(self,regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.2"
+        description = "Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389"
+        scored = True
+        for n in regions:
+            client = boto3.client('ec2', region_name=n)
+            response = client.describe_security_groups()
+            for m in response['SecurityGroups']:
+                if "0.0.0.0/0" in str(m['IpPermissions']):
+                    for o in m['IpPermissions']:
+                        try:
+                            if int(o['FromPort']) <= 3389 <= int(o['ToPort']) and '0.0.0.0/0' in str(o['IpRanges']):
+                                result = False
+                                failReason = "Found Security Group with port 3389 open to the world (0.0.0.0/0)"
+                                offenders.append(str(m['GroupId']))
+                        except:
+                            if str(o['IpProtocol']) == "-1" and '0.0.0.0/0' in str(o['IpRanges']):
+                                result = False
+                                failReason = "Found Security Group with port 3389 open to the world (0.0.0.0/0)"
+                                offenders.append(str(n) + " : " + str(m['GroupId']))
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
