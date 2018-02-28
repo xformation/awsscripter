@@ -1,3 +1,7 @@
+"""Implementation of a Audit function as a class for crdential report generations.
+An instance of the class is created for each invocation, so instance fields can
+be set from the input without the data persisting."""
+import csv
 import logging
 import time
 from datetime import datetime, timedelta
@@ -9,7 +13,9 @@ from awsscripter.audit.audit_status import AuditStatus
 from awsscripter.common.AwsBase import AwsBase
 from awsscripter.common.connection_manager import ConnectionManager
 from awsscripter.common.exceptions import UnknownAuditStatusError
-class PasswordPolicy(AwsBase):
+
+
+class PasswordPolicy():
 
     def __init__(
             self, region="us-east-1", iam_role=None,
@@ -52,9 +58,25 @@ class PasswordPolicy(AwsBase):
             )
         )
 
+    """
+    def get_account_password_policy(self):
+       Check if a IAM password policy exists, if not return false
+
+        Returns:
+            Account IAM password policy or False
+
+        try:
+            response = Audit.IAM_CLIENT.get_account_password_policy()
+            return response['PasswordPolicy']
+        except Exception as e:
+            if "cannot be found" in str(e):
+                return False
+"""
+
     def _format_parameters(self, parameters):
         """
         Converts CloudFormation parameters to the format used by Boto3.
+
         :param parameters: A dictionary of parameters.
         :type parameters: dict
         :returns: A list of the formatted parameters.
@@ -73,14 +95,8 @@ class PasswordPolicy(AwsBase):
 
         return formatted_parameters
 
-
     def get_status(self):
-        """
-        Returns the credential report generation status.
-        :returns: The stack's status.
-        :rtype: awsscripter.stack.stack_status.StackStatus
-        :raises: awsscripter.common.exceptions.StackDoesNotExistError
-        """
+
         try:
             perform_audit_kwargs = {
                 "Parameters": self._format_parameters(self.parameters),
@@ -104,6 +120,7 @@ class PasswordPolicy(AwsBase):
         """
         Waits for a credential report generarion operation to finish. Prints iam events
         while it waits.
+
         :returns: The final audit status.
         :rtype: awsscripter.audit.audit_status.AuditStatus
         """
@@ -116,12 +133,17 @@ class PasswordPolicy(AwsBase):
             status = self._get_simplified_status(self.get_status())
             time.sleep(4)
         return status
+
     def get_account_password_policy(self):
         """Check if a IAM password policy exists, if not return false
         Returns:
             Account IAM password policy or Falsel
         """
         try:
+            """Summary
+                   Returns:
+                       TYPE: Description
+                   """
             perform_audit_kwargs = {
                 "Parameters": self._format_parameters(self.parameters),
                 "Capabilities": ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
@@ -129,9 +151,9 @@ class PasswordPolicy(AwsBase):
                 "Tags": [
                     {"Key": str(k), "Value": str(v)}
                     for k, v in self.tags.items()
-                    ]
+                ]
             }
-            #response = Audit.IAM_CLIENT.get_account_password_policy()
+            # response = Audit.IAM_CLIENT.get_account_password_policy()
             response = self.connection_manager.call(
                 service="iam",
                 command="get_account_password_policy",
@@ -140,32 +162,4 @@ class PasswordPolicy(AwsBase):
             return response['PasswordPolicy']
         except Exception as e:
             if "cannot be found" in str(e):
-              return False
-
-    @staticmethod
-    def _get_simplified_status(status):
-        """
-        Returns the simplified Stack Status.
-
-        The simplified stack status is represented by the struct
-        ``awsscripter.stack.stackStatus()`` and can take one of the following options:
-
-        * STARTED
-        * INPROGRESS
-        * "COMPLETE"
-
-        :param status: The CloudFormation stack status to simplify.
-        :type status: str
-        :returns: The stack's simplified status
-        :rtype: awsscripter.stack.stack_status.StackStatus
-        """
-        if status.endswith("STARTED"):
-            return AuditStatus.STARTED
-        elif status.endswith("INPROGRESS"):
-            return AuditStatus.IN_PROGRESS
-        elif status.endswith("COMPLETE"):
-            return AuditStatus.COMPLETE
-        else:
-            raise UnknownAuditStatusError(
-                "{0} is unknown".format(status)
-            )
+                return False

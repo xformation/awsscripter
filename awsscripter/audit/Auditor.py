@@ -10,13 +10,15 @@ from __future__ import print_function
 import self as self
 from coverage import results
 from os.path import join
+
+from moto.ec2.responses import vpcs
 from s3transfer import subscribers
 from troposphere import Join
 
-from awsscripter.common import connection_manager
+from awsscripter.common.connection_manager import ConnectionManager
 from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.audit.CredReport import CredReport
-from awsscripter.audit.PasswordPolicy import PasswordPolicy
+from awsscripter.audit.Passwordpolicy import PasswordPolicy
 from awsscripter.audit.CloudTrails import CloudTrail
 
 import logging
@@ -170,9 +172,16 @@ class Auditor(LambdaBase):
         control3.append(self.control_3_13_ensure_log_metric_changes_to_route_tables(cloud_trails))
         control3.append(self.control_3_14_ensure_log_metric_changes_to_vpc(cloud_trails))
         control3.append(self.control_3_15_verify_sns_subscribers())
+        control4 = []
+        control4.append(self.control_4_1_ensure_ssh_not_open_to_world(regions))
+        control4.append(self.control_4_2_ensure_rdp_not_open_to_world(regions))
+        control4.append(self.control_4_3_ensure_flow_logs_enabled_on_all_vpc(regions))
+        control4.append(self.control_4_4_ensure_default_security_groups_restricts_traffic(regions))
+        control4.append(self.control_4_5_ensure_route_tables_are_least_access(regions))
 
         controls = []
         controls.append(control3)
+        controls.append(control4)
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             Auditor.json_output(controls)
@@ -1422,6 +1431,238 @@ class Auditor(LambdaBase):
         failReason = "Control not implemented using API, please verify manually"
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_4_1_ensure_ssh_not_open_to_world(self, regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.1"
+        description = "Ensure no security groups allow ingress from 0.0.0.0/0 to port 22"
+        scored = True
+        for n in regions:
+            """client = boto3.client('ec2', region_name=n)
+            response = client.describe_security_groups()"""
+            cloud_kwargs = None
+            response = self.connection_manager.call(
+                service='ec2',
+                command='describe_security_groups',
+                kwargs=cloud_kwargs
+            )
+            for m in response['SecurityGroups']:
+                if "0.0.0.0/0" in str(m['IpPermissions']):
+                    for o in m['IpPermissions']:
+                        try:
+                            if int(o['FromPort']) <= 22 <= int(o['ToPort']) and '0.0.0.0/0' in str(o['IpRanges']):
+                                result = False
+                                failReason = "Found Security Group with port 22 open to the world (0.0.0.0/0)"
+                                offenders.append(str(m['GroupId']))
+                        except:
+                            if str(o['IpProtocol']) == "-1" and '0.0.0.0/0' in str(o['IpRanges']):
+                                result = False
+                                failReason = "Found Security Group with port 22 open to the world (0.0.0.0/0)"
+                                offenders.append(str(n) + " : " + str(m['GroupId']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 4.2 Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389 (Scored)
+    def control_4_2_ensure_rdp_not_open_to_world(self, regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.2"
+        description = "Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389"
+        scored = True
+        for n in regions:
+            """client = boto3.client('ec2', region_name=n)
+            response = client.describe_security_groups()"""
+            cloud_kwargs = None
+            response = self.connection_manager.call(
+                service='ec2',
+                command='describe_security_groups',
+                kwargs=cloud_kwargs
+            )
+            for m in response['SecurityGroups']:
+                if "0.0.0.0/0" in str(m['IpPermissions']):
+                    for o in m['IpPermissions']:
+                        try:
+                            if int(o['FromPort']) <= 3389 <= int(o['ToPort']) and '0.0.0.0/0' in str(o['IpRanges']):
+                                result = False
+                                failReason = "Found Security Group with port 3389 open to the world (0.0.0.0/0)"
+                                offenders.append(str(m['GroupId']))
+                        except:
+                            if str(o['IpProtocol']) == "-1" and '0.0.0.0/0' in str(o['IpRanges']):
+                                result = False
+                                failReason = "Found Security Group with port 3389 open to the world (0.0.0.0/0)"
+                                offenders.append(str(n) + " : " + str(m['GroupId']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 4.3 Ensure VPC flow logging is enabled in all VPCs (Scored)
+    def control_4_3_ensure_flow_logs_enabled_on_all_vpc(self, regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.3"
+        description = "Ensure VPC flow logging is enabled in all VPCs"
+        scored = True
+        for n in regions:
+            """client = boto3.client('ec2', region_name=n)
+            flowlogs = client.describe_flow_logs(
+                #  No paginator support in boto atm.
+            )"""
+            fl_kwargs = None
+            flowlogs = self.connection_manager.call (
+            service = 'ec2',
+            command = 'describe_flow_logs',
+            kwargs = fl_kwargs
+            )
+            activeLogs = []
+            for m in flowlogs['FlowLogs']:
+                if "vpc-" in str(m['ResourceId']):
+                    activeLogs.append(m['ResourceId'])
+            #vpcs = client.describe_vpcs(
+
+                cloud_kwargs = {
+                    'Filters' : [
+                    {
+                        'Name': 'state',
+                        'Values': [
+                            'available',
+                        ]
+                    },
+
+                ]
+                }
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 4.4 Ensure the default security group of every VPC restricts all traffic (Scored)
+    def control_4_4_ensure_default_security_groups_restricts_traffic(self, regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.4"
+        description = "Ensure the default security group of every VPC restricts all traffic"
+        scored = True
+        for n in regions:
+            """client = boto3.client('ec2', region_name=n)
+            response = client.describe_security_groups"""
+            cloud_kwargs = {
+                'Filters' : [
+                    {
+                        'Name': 'group-name',
+                        'Values': [
+                            'default',
+                        ]
+                    },
+                ]
+            }
+            response = self.connection_manager.call(
+            service = 'ec2',
+            command = 'describe_security_groups',
+            kwargs = cloud_kwargs
+            )
+            for m in response['SecurityGroups']:
+                if not (len(m['IpPermissions']) + len(m['IpPermissionsEgress'])) == 0:
+                    result = False
+                    failReason = "Default security groups with ingress or egress rules discovered"
+                    offenders.append(str(n) + " : " + str(m['GroupId']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 4.5 Ensure routing tables for VPC peering are "least access" (Not Scored)
+    def control_4_5_ensure_route_tables_are_least_access(self, regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.5"
+        description = "Ensure routing tables for VPC peering are least access"
+        scored = False
+        for n in regions:
+           """ client = boto3.client('ec2', region_name=n)
+            response = client.describe_route_tables()"""
+        ec2_kwargs = None
+        response = self.connectionmanager.call(
+        service = 'ec2',
+        command = 'describe_route_tables',
+        kwargs = ec2_kwargs
+        )
+            
+        for m in response['RouteTables']:
+                for o in m['Routes']:
+                    try:
+                        if o['VpcPeeringConnectionId']:
+                            if int(str(o['DestinationCidrBlock']).split("/", 1)[1]) < 24:
+                                result = False
+                                failReason = "Large CIDR block routed to peer discovered, please investigate"
+                                offenders.append(str(n) + " : " + str(m['RouteTableId']))
+                    except:
+                        pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 4.5 Ensure routing tables for VPC peering are "least access" (Not Scored)
+    def control_4_5_ensure_route_tables_are_least_access(self, regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.5"
+        description = "Ensure routing tables for VPC peering are least access"
+        scored = False
+        for n in regions:
+            """client = boto3.client('ec2', region_name=n)
+            response = client.describe_route_tables()"""
+            ec2_kwargs = None
+            response = self.connection_manager.call(
+                service= 'ec2',
+                command = 'describe_route_tables',
+                kwargs = ec2_kwargs
+            )
+            for m in response['RouteTables']:
+                for o in m['Routes']:
+                    try:
+                        if o['VpcPeeringConnectionId']:
+                            if int(str(o['DestinationCidrBlock']).split("/", 1)[1]) < 24:
+                                result = False
+                                failReason = "Large CIDR block routed to peer discovered, please investigate"
+                                offenders.append(str(n) + " : " + str(m['RouteTableId']))
+                    except:
+                        pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def setRegion(self, region, iam_role=None):
+        self.connection_manager = ConnectionManager(region,iam_role)
 
     def json_output(controlResult):
         """Summary

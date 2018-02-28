@@ -145,10 +145,11 @@ class CredReport(AwsBase):
                 for k, v in self.tags.items()
             ]
         }
+        perform_audit_kwargs = None
         response = self.connection_manager.call(
             service="iam",
             command="get_credential_report",
-            kwargs=perform_audit_kwargs
+            kwargs= perform_audit_kwargs
         )
         self.logger.debug("Response is ", response)
         report = []
