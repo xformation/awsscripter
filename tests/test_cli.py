@@ -512,7 +512,7 @@ class TestCli(object):
                 "region": region
             }
 
-            result = self.runner.invoke(cli, ["init", "project", "example"])
+            result = self.runner.invoke(cli, ["init1", "project", "example"])
             assert not result.exception
             assert os.path.isdir(config_dir)
             assert os.path.isdir(template_dir)
@@ -539,7 +539,7 @@ class TestCli(object):
             with open(config_filepath, 'w') as config_file:
                 yaml.dump(existing_config, config_file)
 
-            result = self.runner.invoke(cli, ["init", "project", "example"])
+            result = self.runner.invoke(cli, ["init1", "project", "example"])
             assert result.exit_code == 1
             assert result.output == 'Folder \"example\" already exists.\n'
             assert os.path.isdir(config_dir)
@@ -553,10 +553,10 @@ class TestCli(object):
     def test_init_project_another_exception(self):
         self.patcher_getcwd.stop()
         with self.runner.isolated_filesystem():
-            patcher_mkdir = patch("awsscripter.cli.init.os.mkdir")
+            patcher_mkdir = patch("awsscripter.cli.init1.os.mkdir")
             mock_mkdir = patcher_mkdir.start()
             mock_mkdir.side_effect = OSError(errno.EINVAL)
-            result = self.runner.invoke(cli, ["init", "project", "example"])
+            result = self.runner.invoke(cli, ["init1", "project", "example"])
             mock_mkdir = patcher_mkdir.stop()
             assert str(result.exception) == str(OSError(errno.EINVAL))
         self.patcher_getcwd.start()
@@ -623,7 +623,7 @@ class TestCli(object):
             os.chdir(sceptre_dir)
 
             cmd_result = self.runner.invoke(
-                cli, ["init", "env", environment],
+                cli, ["init1", "env", environment],
                 input=stdin
             )
 
@@ -648,7 +648,7 @@ class TestCli(object):
             os.chdir(sceptre_dir)
 
             cmd_result = self.runner.invoke(
-                cli, ["init", "env", "A"], input="y\n\n\n"
+                cli, ["init1", "env", "A"], input="y\n\n\n"
             )
 
             assert cmd_result.output.startswith(
@@ -671,10 +671,10 @@ class TestCli(object):
             os.makedirs(env_dir)
             os.chdir(sceptre_dir)
 
-            patcher_mkdir = patch("awsscripter.cli.init.os.mkdir")
+            patcher_mkdir = patch("awsscripter.cli.init1.os.mkdir")
             mock_mkdir = patcher_mkdir.start()
             mock_mkdir.side_effect = OSError(errno.EINVAL)
-            result = self.runner.invoke(cli, ["init", "env", "A"])
+            result = self.runner.invoke(cli, ["init1", "env", "A"])
             mock_mkdir = patcher_mkdir.stop()
             assert str(result.exception) == str(OSError(errno.EINVAL))
 
