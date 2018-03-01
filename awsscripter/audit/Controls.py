@@ -1171,7 +1171,7 @@ class Control():
     # --- Monitoring ---
 
     # 3.1 Ensure a log metric filter and alarm exist for unauthorized API calls (Scored)
-    def control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloudtrails):
+    def control_3_1_ensure_log_metric_filter_unauthorized_api_calls(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1185,27 +1185,52 @@ class Control():
         scored = True
         failReason = "Incorrect log metric alerts for unauthorized_api_calls"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        #client = boto3.client('logs', region_name=m)
+                        metric_kwargs={
+                            "logGroupName": group
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=metric_kwargs
                         )
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.errorCode\s*=\s*\"?\*UnauthorizedOperation(\"|\)|\s)",
                                         "\$\.errorCode\s*=\s*\"?AccessDenied\*(\"|\)|\s)"]
+                            log_kwargs={
+                                "MetricName" : p['metricTransformations'][0]['metricName'],
+                                "Namespace" :p['metricTransformations'][0]['metricNamespace']
+                            }
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                response=self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=log_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #cwclient = boto3.client('cloudwatch', region_name=m)
+                                #response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
                                     #  Pagination not used since only 1 subscriber required
+                                sns_kwargs={
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
@@ -1215,7 +1240,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.2 Ensure a log metric filter and alarm exist for Management Console sign-in without MFA (Scored)
-    def control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloudtrails):
+    def control_3_2_ensure_log_metric_filter_console_signin_no_mfa(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1229,28 +1254,56 @@ class Control():
         scored = True
         failReason = "Incorrect log metric alerts for management console signin without MFA"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
+                        metric_kwargs={
+                            "logGroupName": group
+                        }
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=metric_kwargs
+
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?ConsoleLogin(\"|\)|\s)",
                                         "\$\.additionalEventData\.MFAUsed\s*\!=\s*\"?Yes"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                log_kwargs = {
+                                    "MetricName": p['metricTransformations'][0]['metricName'],
+                                    "Namespace": p['metricTransformations'][0]['metricNamespace']
+                                }
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=log_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
+                                #  Pagination not used since only 1 subscriber required
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
                 except:
@@ -1259,7 +1312,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.3 Ensure a log metric filter and alarm exist for usage of "root" account (Scored)
-    def control_3_3_ensure_log_metric_filter_root_usage(cloudtrails):
+    def control_3_3_ensure_log_metric_filter_root_usage(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1273,29 +1326,56 @@ class Control():
         scored = True
         failReason = "Incorrect log metric alerts for root usage"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
+                        metric_kwargs = {
+                            "logGroupName": group
+                        }
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=metric_kwargs
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.userIdentity\.type\s*=\s*\"?Root",
                                         "\$\.userIdentity\.invokedBy\s*NOT\s*EXISTS",
                                         "\$\.eventType\s*\!=\s*\"?AwsServiceEvent(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                log_kwargs = {
+                                    "MetricName": p['metricTransformations'][0]['metricName'],
+                                    "Namespace": p['metricTransformations'][0]['metricNamespace']
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=log_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #     #  Pagination not used since only 1 subscriber required
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
+                                #  Pagination not used since only 1 subscriber required
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
                 except:
@@ -1304,9 +1384,8 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.4 Ensure a log metric filter and alarm exist for IAM policy changes  (Scored)
-    def control_3_4_ensure_log_metric_iam_policy_change(cloudtrails):
+    def control_3_4_ensure_log_metric_iam_policy_change(self, cloudtrails):
         """Summary
-
         Returns:
             TYPE: Description
         """
@@ -1318,14 +1397,26 @@ class Control():
         scored = True
         failReason = "Incorrect log metric alerts for IAM policy changes"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
+                        )
+                        """
+                        client = connection_manager.client('logs', region_name=m)
                         filters = client.describe_metric_filters(
                             logGroupName=group
-                        )
+                        )"""
+
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?DeleteGroupPolicy(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?DeleteRolePolicy(\"|\)|\s)",
@@ -1344,16 +1435,43 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?AttachGroupPolicy(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?DetachGroupPolicy(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
+                                MetricName = p['metricTransformations'][0]['metricName'],
+                                Namespace = p['metricTransformations'][0]['metricNamespace']
+
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace,
+
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
+                                )
+                                """
+                                cwclient = connection_manager.client('cloudwatch', region_name=m)
                                 response = cwclient.describe_alarms_for_metric(
                                     MetricName=p['metricTransformations'][0]['metricName'],
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                )"""
+                                TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
+
+                                cloud_kwargs = {
+                                    'TopicArn': TopicArn,
+
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
+                                """
+                                snsClient = connection_manager.client('sns', region_name=m)
                                 subscribers = snsClient.list_subscriptions_by_topic(
                                     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
                                     #  Pagination not used since only 1 subscriber required
-                                )
+                                )"""
+
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
                 except:
@@ -1362,9 +1480,8 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.5 Ensure a log metric filter and alarm exist for CloudTrail configuration changes (Scored)
-    def control_3_5_ensure_log_metric_cloudtrail_configuration_changes(cloudtrails):
+    def control_3_5_ensure_log_metric_cloudtrail_configuration_changes(self, cloudtrails):
         """Summary
-
         Returns:
             TYPE: Description
         """
@@ -1376,14 +1493,25 @@ class Control():
         scored = True
         failReason = "Incorrect log metric alerts for CloudTrail configuration changes"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
+
+                        )
+                        """client = connection_manager.client('logs', region_name=m)
                         filters = client.describe_metric_filters(
                             logGroupName=group
-                        )
+                        )"""
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?CreateTrail(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?UpdateTrail(\"|\)|\s)",
@@ -1391,16 +1519,41 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?StartLogging(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?StopLogging(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
+                                MetricName = p['metricTransformations'][0]['metricName'],
+                                Namespace = p['metricTransformations'][0]['metricNamespace']
+
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
+                                )
+                                """cwclient = connection_manager.client('cloudwatch', region_name=m)
                                 response = cwclient.describe_alarms_for_metric(
                                     MetricName=p['metricTransformations'][0]['metricName'],
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                )"""
+
+                                TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
+                                m = 'us-east-1'
+                                cloud_kwargs = {
+                                    'TopicArn': TopicArn,
+                                    'region_name': m
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
+                                """
+                                snsClient = connection_manager.client('sns', region_name=m)
                                 subscribers = snsClient.list_subscriptions_by_topic(
                                     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
                                     #  Pagination not used since only 1 subscriber required
-                                )
+                                )"""
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
                 except:
@@ -1409,9 +1562,8 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.6 Ensure a log metric filter and alarm exist for AWS Management Console authentication failures (Scored)
-    def control_3_6_ensure_log_metric_console_auth_failures(cloudtrails):
+    def control_3_6_ensure_log_metric_console_auth_failures(self, cloudtrails):
         """Summary
-
         Returns:
             TYPE: Description
         """
@@ -1423,28 +1575,67 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for console auth failures"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
+
+                        )
+                        """
+                        client = connection_manager.client('logs', region_name=m)
                         filters = client.describe_metric_filters(
                             logGroupName=group
-                        )
+                        )"""
+
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?ConsoleLogin(\"|\)|\s)",
                                         "\$\.errorMessage\s*=\s*\"?Failed authentication(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
+                                MetricName = p['metricTransformations'][0]['metricName'],
+                                Namespace = p['metricTransformations'][0]['metricNamespace']
+
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
+                                )
+                                """
+                                cwclient = connection_manager.client('cloudwatch', region_name=m)
                                 response = cwclient.describe_alarms_for_metric(
                                     MetricName=p['metricTransformations'][0]['metricName'],
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                )"""
+                                TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
+
+                                cloud_kwargs = {
+                                    'TopicArn': TopicArn,
+
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
+                                """
+                                snsClient = connection_manager.client('sns', region_name=m)
                                 subscribers = snsClient.list_subscriptions_by_topic(
                                     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
                                     #  Pagination not used since only 1 subscriber required
-                                )
+                                )"""
+
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
                 except:
@@ -1453,9 +1644,8 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.7 Ensure a log metric filter and alarm exist for disabling or scheduled deletion of customer created CMKs (Scored)
-    def control_3_7_ensure_log_metric_disabling_scheduled_delete_of_kms_cmk(cloudtrails):
+    def control_3_7_ensure_log_metric_disabling_scheduled_delete_of_kms_cmk(self, cloudtrails):
         """Summary
-
         Returns:
             TYPE: Description
         """
@@ -1467,29 +1657,67 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for disabling or scheduling deletion of KMS CMK"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
+
+                        )
+                        """
+                        client = connection_manager.client('logs', region_name=m)
                         filters = client.describe_metric_filters(
                             logGroupName=group
-                        )
+                        )"""
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventSource\s*=\s*\"?kms\.amazonaws\.com(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?DisableKey(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?ScheduleKeyDeletion(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
+                                MetricName = p['metricTransformations'][0]['metricName'],
+                                Namespace = p['metricTransformations'][0]['metricNamespace']
+
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
+                                )
+
+                                """
+                                cwclient = connection_manager.client('cloudwatch', region_name=m)
                                 response = cwclient.describe_alarms_for_metric(
                                     MetricName=p['metricTransformations'][0]['metricName'],
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                )"""
+                                TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
+
+                                cloud_kwargs = {
+                                    'TopicArn': TopicArn,
+
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
+                                """
+                                snsClient = connection_manager.client('sns', region_name=m)
                                 subscribers = snsClient.list_subscriptions_by_topic(
                                     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
                                     #  Pagination not used since only 1 subscriber required
-                                )
+                                )"""
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
                 except:
@@ -1498,7 +1726,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.8 Ensure a log metric filter and alarm exist for S3 bucket policy changes (Scored)
-    def control_3_8_ensure_log_metric_s3_bucket_policy_changes(cloudtrails):
+    def control_3_8_ensure_log_metric_s3_bucket_policy_changes(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1512,13 +1740,23 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for S3 bucket policy changes"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventSource\s*=\s*\"?s3\.amazonaws\.com(\"|\)|\s)",
@@ -1532,15 +1770,33 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?DeleteBucketLifecycle(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?DeleteBucketReplication(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace,
+
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #     #  Pagination not used since only 1 subscriber required
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
@@ -1550,7 +1806,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.9 Ensure a log metric filter and alarm exist for AWS Config configuration changes (Scored)
-    def control_3_9_ensure_log_metric_config_configuration_changes(cloudtrails):
+    def control_3_9_ensure_log_metric_config_configuration_changes(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1564,13 +1820,24 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for for AWS Config configuration changes"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventSource\s*=\s*\"?config\.amazonaws\.com(\"|\)|\s)",
@@ -1579,15 +1846,33 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?PutDeliveryChannel(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?PutConfigurationRecorder(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace,
+
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #     #  Pagination not used since only 1 subscriber required
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
@@ -1597,7 +1882,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.10 Ensure a log metric filter and alarm exist for security group changes (Scored)
-    def control_3_10_ensure_log_metric_security_group_changes(cloudtrails):
+    def control_3_10_ensure_log_metric_security_group_changes(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1611,13 +1896,23 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for security group changes"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?AuthorizeSecurityGroupIngress(\"|\)|\s)",
@@ -1627,15 +1922,33 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?CreateSecurityGroup(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?DeleteSecurityGroup(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace,
+
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #     #  Pagination not used since only 1 subscriber required
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
@@ -1645,7 +1958,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.11 Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL) (Scored)
-    def control_3_11_ensure_log_metric_nacl(cloudtrails):
+    def control_3_11_ensure_log_metric_nacl(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1659,13 +1972,23 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for changes to Network Access Control Lists (NACL)"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?CreateNetworkAcl(\"|\)|\s)",
@@ -1675,16 +1998,36 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?ReplaceNetworkAclEntry(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?ReplaceNetworkAclAssociation(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace,
+
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #     #  Pagination not used since only 1 subscriber required
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
+                                if not len(subscribers['Subscriptions']) == 0:
+                                    result = True
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
                 except:
@@ -1693,7 +2036,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.12 Ensure a log metric filter and alarm exist for changes to network gateways (Scored)
-    def control_3_12_ensure_log_metric_changes_to_network_gateways(cloudtrails):
+    def control_3_12_ensure_log_metric_changes_to_network_gateways(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1707,13 +2050,23 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for changes to network gateways"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?CreateCustomerGateway(\"|\)|\s)",
@@ -1723,15 +2076,33 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?DeleteInternetGateway(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?DetachInternetGateway(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace,
+
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #     #  Pagination not used since only 1 subscriber required
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
@@ -1741,7 +2112,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.13 Ensure a log metric filter and alarm exist for route table changes (Scored)
-    def control_3_13_ensure_log_metric_changes_to_route_tables(cloudtrails):
+    def control_3_13_ensure_log_metric_changes_to_route_tables(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1755,13 +2126,23 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for route table changes"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?CreateRoute(\"|\)|\s)",
@@ -1772,15 +2153,33 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?DeleteRoute(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?DisassociateRouteTable(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace,
+
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #     #  Pagination not used since only 1 subscriber required
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True
@@ -1790,7 +2189,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 3.14 Ensure a log metric filter and alarm exist for VPC changes (Scored)
-    def control_3_14_ensure_log_metric_changes_to_vpc(cloudtrails):
+    def control_3_14_ensure_log_metric_changes_to_vpc(self,cloudtrails):
         """Summary
 
         Returns:
@@ -1804,13 +2203,23 @@ class Control():
         scored = True
         failReason = "Ensure a log metric filter and alarm exist for VPC changes"
         for m, n in cloudtrails.items():
+            self.setRegion(m, iam_role=None)
             for o in n:
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        client = boto3.client('logs', region_name=m)
-                        filters = client.describe_metric_filters(
-                            logGroupName=group
+                        # client = boto3.client('logs', region_name=m)
+                        # filters = client.describe_metric_filters(
+                        #     logGroupName=group
+                        # )
+                        cloud_kwargs = {
+                            'logGroupName': group,
+
+                        }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
                         )
                         for p in filters['metricFilters']:
                             patterns = ["\$\.eventName\s*=\s*\"?CreateVpc(\"|\)|\s)",
@@ -1825,15 +2234,33 @@ class Control():
                                         "\$\.eventName\s*=\s*\"?DisableVpcClassicLink(\"|\)|\s)",
                                         "\$\.eventName\s*=\s*\"?EnableVpcClassicLink(\"|\)|\s)"]
                             if find_in_string(patterns, str(p['filterPattern'])):
-                                cwclient = boto3.client('cloudwatch', region_name=m)
-                                response = cwclient.describe_alarms_for_metric(
-                                    MetricName=p['metricTransformations'][0]['metricName'],
-                                    Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # cwclient = boto3.client('cloudwatch', region_name=m)
+                                # response = cwclient.describe_alarms_for_metric(
+                                #     MetricName=p['metricTransformations'][0]['metricName'],
+                                #     Namespace=p['metricTransformations'][0]['metricNamespace']
+                                # )
+                                cloud_kwargs = {
+                                    'MetricName': MetricName,
+                                    'Namespace': Namespace,
+
+                                }
+                                response = self.connection_manager.call(
+                                    service='cloudwatch',
+                                    command='describe_alarms_for_metric',
+                                    kwargs=cloud_kwargs
                                 )
-                                snsClient = boto3.client('sns', region_name=m)
-                                subscribers = snsClient.list_subscriptions_by_topic(
-                                    TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
-                                    #  Pagination not used since only 1 subscriber required
+                                # snsClient = boto3.client('sns', region_name=m)
+                                # subscribers = snsClient.list_subscriptions_by_topic(
+                                #     TopicArn=response['MetricAlarms'][0]['AlarmActions'][0]
+                                #     #  Pagination not used since only 1 subscriber required
+                                # )
+                                sns_kwargs = {
+                                    "TopicArn": response['MetricAlarms'][0]['AlarmActions'][0]
+                                }
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
+                                    kwargs=sns_kwargs
                                 )
                                 if not len(subscribers['Subscriptions']) == 0:
                                     result = True

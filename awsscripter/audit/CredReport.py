@@ -149,8 +149,6 @@ class CredReport(AwsBase):
             command="get_credential_report",
             kwargs=perform_audit_kwargs
         )
-        print("credreport")
-        print(response)
         self.logger.debug("Response is ", response)
         report = []
         splitted_contents = response['Content'].splitlines()

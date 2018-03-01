@@ -140,7 +140,6 @@ class CloudTrail():
             #print(response)
             temp = []
             for m in response['trailList']:
-                print(response['trailList'])
                 if m['IsMultiRegionTrail'] is True:
                     if m['HomeRegion'] == region:
                         temp.append(m)
@@ -148,6 +147,5 @@ class CloudTrail():
                     temp.append(m)
             if len(temp) > 0:
                 trails[region] = temp
-            print(trails)
         return trails
 

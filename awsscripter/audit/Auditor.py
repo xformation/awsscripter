@@ -146,7 +146,7 @@ class Auditor(LambdaBase):
         regions = reglist.get_regions()
         #print(regions)
         region_list = reglist.get_regions()
-        #cloud_trails = reglist.get_cloudtrails(regions)
+        cloud_trails = reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
         # control1 = []
@@ -178,7 +178,25 @@ class Auditor(LambdaBase):
         control2 = []
         #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
 
-        control4 = []
+        control3 = []
+        control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
+        control3.append(self.control.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloud_trails))
+        control3.append(self.control.control_3_3_ensure_log_metric_filter_root_usage(cloud_trails))
+        control3.append(self.control.control_3_4_ensure_log_metric_iam_policy_change(cloud_trails))
+        control3.append(self.control.control_3_5_ensure_log_metric_cloudtrail_configuration_changes(cloud_trails))
+        control3.append(self.control.control_3_6_ensure_log_metric_console_auth_failures(cloud_trails))
+        control3.append(self.control.control_3_7_ensure_log_metric_disabling_scheduled_delete_of_kms_cmk(cloud_trails))
+        control3.append(self.control.control_3_8_ensure_log_metric_s3_bucket_policy_changes(cloud_trails))
+        control3.append(self.control.control_3_9_ensure_log_metric_config_configuration_changes(cloud_trails))
+        control3.append(self.control.control_3_10_ensure_log_metric_security_group_changes(cloud_trails))
+        control3.append(self.control.control_3_11_ensure_log_metric_nacl(cloud_trails))
+        control3.append(self.control.control_3_12_ensure_log_metric_changes_to_network_gateways(cloud_trails))
+        control3.append(self.control.control_3_13_ensure_log_metric_changes_to_route_tables(cloud_trails))
+        control3.append(self.control.control_3_14_ensure_log_metric_changes_to_vpc(cloud_trails))
+        control3.append(self.control.control_3_15_verify_sns_subscribers())
+
+
+        #control4 = []
         # control4.append(self.control.control_4_1_ensure_ssh_not_open_to_world(region_list))
         # control4.append(self.control_4_2_ensure_rdp_not_open_to_world(region_list))
         #control4.append(self.control.control_4_3_ensure_flow_logs_enabled_on_all_vpc(region_list))
@@ -188,7 +206,8 @@ class Auditor(LambdaBase):
         controls = []
         #controls.append(control1)
         #controls.append(control2)
-        controls.append(control4)
+        #controls.append(control4)
+        controls.append(control3)
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             Auditor.json_output(controls)
