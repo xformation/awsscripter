@@ -891,35 +891,7 @@ class Control():
     # --- 2 Logging ---
 
     # 2.1 Ensure CloudTrail is enabled in all regions (Scored)
-    def control_2_1_ensure_cloud_trail_all_regions(self, cloudtrails):
-        """Summary
 
-        Args:
-            cloudtrails (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        result = False
-        failReason = ""
-        offenders = []
-        control = "2.1"
-        description = "Ensure CloudTrail is enabled in all regions"
-        scored = True
-        for m, n in cloudtrails.items():
-            for o in n:
-                if o['IsMultiRegionTrail']:
-                    client = boto3.client('cloudtrail', region_name=m)
-                    response = client.get_trail_status(
-                        Name=o['TrailARN']
-                    )
-                    if response['IsLogging'] is True:
-                        result = True
-                        break
-        if result is False:
-            failReason = "No enabled multi region trails found"
-        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
-                'Description': description, 'ControlId': control}
 
     # 2.2 Ensure CloudTrail log file validation is enabled (Scored)
     def control_2_2_ensure_cloudtrail_validation(cloudtrails):
@@ -1930,9 +1902,8 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 4.2 Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389 (Scored)
-    def control_4_2_ensure_rdp_not_open_to_world(self,regions):
+    def control_4_2_ensure_rdp_not_open_to_world(self, regions):
         """Summary
-
         Returns:
             TYPE: Description
         """
@@ -1943,8 +1914,15 @@ class Control():
         description = "Ensure no security groups allow ingress from 0.0.0.0/0 to port 3389"
         scored = True
         for n in regions:
-            client = boto3.client('ec2', region_name=n)
-            response = client.describe_security_groups()
+            # client = boto3.client('ec2', region_name=n)
+            # response = client.describe_security_groups()
+            self.setRegion(n, iam_role=None)
+            ec2_kwargs = None
+            response = self.connection_manager.call(
+                service="ec2",
+                command="describe_security_groups",
+                kwargs=ec2_kwargs
+            )
             for m in response['SecurityGroups']:
                 if "0.0.0.0/0" in str(m['IpPermissions']):
                     for o in m['IpPermissions']:
@@ -1962,9 +1940,8 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 4.3 Ensure VPC flow logging is enabled in all VPCs (Scored)
-    def control_4_3_ensure_flow_logs_enabled_on_all_vpc(regions):
+    def control_4_3_ensure_flow_logs_enabled_on_all_vpc(self, regions):
         """Summary
-
         Returns:
             TYPE: Description
         """
@@ -1975,16 +1952,24 @@ class Control():
         description = "Ensure VPC flow logging is enabled in all VPCs"
         scored = True
         for n in regions:
-            client = boto3.client('ec2', region_name=n)
-            flowlogs = client.describe_flow_logs(
-                #  No paginator support in boto atm.
+            # client = boto3.client('ec2', region_name=n)
+            # flowlogs = client.describe_flow_logs(
+            #  No paginator support in boto atm.
+            # )
+            self.setRegion(n, iam_role=None)
+            ec2_kwargs = None
+            flowlogs = self.connection_manager.call(
+                service="ec2",
+                command="describe_flow_logs",
+                kwargs=ec2_kwargs
             )
             activeLogs = []
             for m in flowlogs['FlowLogs']:
                 if "vpc-" in str(m['ResourceId']):
                     activeLogs.append(m['ResourceId'])
-            vpcs = client.describe_vpcs(
-                Filters=[
+            # vpcs = client.describe_vpcs(
+            ec2_kwargs = {
+                "Filters": [
                     {
                         'Name': 'state',
                         'Values': [
@@ -1992,6 +1977,11 @@ class Control():
                         ]
                     },
                 ]
+            }
+            vpcs = self.connection_manager.call(
+                service="ec2",
+                command="describe_vpcs",
+                kwargs=ec2_kwargs
             )
             for m in vpcs['Vpcs']:
                 if not str(m['VpcId']) in str(activeLogs):
@@ -2002,9 +1992,9 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 4.4 Ensure the default security group of every VPC restricts all traffic (Scored)
-    def control_4_4_ensure_default_security_groups_restricts_traffic(regions):
+    # 4.4 Ensure the default security group of every VPC restricts all traffic (Scored)
+    def control_4_4_ensure_default_security_groups_restricts_traffic(self, regions):
         """Summary
-
         Returns:
             TYPE: Description
         """
@@ -2015,9 +2005,11 @@ class Control():
         description = "Ensure the default security group of every VPC restricts all traffic"
         scored = True
         for n in regions:
-            client = boto3.client('ec2', region_name=n)
-            response = client.describe_security_groups(
-                Filters=[
+            self.setRegion(n, iam_role=None)
+            # client = boto3.client('ec2', region_name=n)
+            # response = client.describe_security_groups(
+            ec2_kwargs = {
+                "Filters": [
                     {
                         'Name': 'group-name',
                         'Values': [
@@ -2025,6 +2017,12 @@ class Control():
                         ]
                     },
                 ]
+            }
+
+            response = self.connection_manager.call(
+                service="ec2",
+                command="describe_security_groups",
+                kwargs=ec2_kwargs
             )
             for m in response['SecurityGroups']:
                 if not (len(m['IpPermissions']) + len(m['IpPermissionsEgress'])) == 0:
@@ -2035,9 +2033,8 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 4.5 Ensure routing tables for VPC peering are "least access" (Not Scored)
-    def control_4_5_ensure_route_tables_are_least_access(regions):
+    def control_4_5_ensure_route_tables_are_least_access(self, regions):
         """Summary
-
         Returns:
             TYPE: Description
         """
@@ -2048,37 +2045,15 @@ class Control():
         description = "Ensure routing tables for VPC peering are least access"
         scored = False
         for n in regions:
-            client = boto3.client('ec2', region_name=n)
-            response = client.describe_route_tables()
-            for m in response['RouteTables']:
-                for o in m['Routes']:
-                    try:
-                        if o['VpcPeeringConnectionId']:
-                            if int(str(o['DestinationCidrBlock']).split("/", 1)[1]) < 24:
-                                result = False
-                                failReason = "Large CIDR block routed to peer discovered, please investigate"
-                                offenders.append(str(n) + " : " + str(m['RouteTableId']))
-                    except:
-                        pass
-        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
-                'Description': description, 'ControlId': control}
-
-    # 4.5 Ensure routing tables for VPC peering are "least access" (Not Scored)
-    def control_4_5_ensure_route_tables_are_least_access(regions):
-        """Summary
-
-        Returns:
-            TYPE: Description
-        """
-        result = True
-        failReason = ""
-        offenders = []
-        control = "4.5"
-        description = "Ensure routing tables for VPC peering are least access"
-        scored = False
-        for n in regions:
-            client = boto3.client('ec2', region_name=n)
-            response = client.describe_route_tables()
+            self.setRegion(n, iam_role=None)
+            # client = boto3.client('ec2', region_name=n)
+            # response = client.describe_route_tables()
+            ec2_kwargs = None
+            response = self.connection_manager.call(
+                service="ec2",
+                command="describe_route_tables",
+                kwargs=ec2_kwargs
+            )
             for m in response['RouteTables']:
                 for o in m['Routes']:
                     try:
