@@ -10,10 +10,12 @@ from __future__ import print_function
 import self as self
 from coverage import results
 from os.path import join
+
+from moto.cloudwatch.models import region
 from s3transfer import subscribers
 from troposphere import Join
 
-from awsscripter.common import connection_manager
+
 from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.audit.CredReport import CredReport
 from awsscripter.audit.PasswordPolicy import PasswordPolicy
@@ -151,9 +153,45 @@ class Auditor(LambdaBase):
         regionlists = CloudTrail()
         regions = regionlists.get_regions()
         cloud_trails = regionlists.get_cloudtrails(regions)
+        print(regions)
 
         # Run individual controls.
         # Comment out unwanted controls
+        control1 = []
+        control1.append(self.control_1_1_root_use(cred_report))
+        control1.append(self.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control_1_3_unused_credentials(cred_report))
+        control1.append(self.control_1_4_rotated_keys(cred_report))
+        control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
+        control1.append(self.control_1_6_password_policy_lowercase(passwordpolicy))
+        control1.append(self.control_1_7_password_policy_symbol(passwordpolicy))
+        control1.append(self.control_1_8_password_policy_number(passwordpolicy))
+        control1.append(self.control_1_9_password_policy_length(passwordpolicy))
+        control1.append(self.control_1_10_password_policy_reuse(passwordpolicy))
+        control1.append(self.control_1_11_password_policy_expire(passwordpolicy))
+        control1.append(self.control_1_12_root_key_exists(cred_report))
+        control1.append(self.control_1_13_root_mfa_enabled())
+        control1.append(self.control_1_14_root_hardware_mfa_enabled())
+        control1.append(self.control_1_15_security_questions_registered())
+        control1.append(self.control_1_16_no_policies_on_iam_users())
+        control1.append(self.control_1_17_detailed_billing_enabled())
+        control1.append(self.control_1_18_ensure_iam_master_and_manager_roles())
+        control1.append(self.control_1_19_maintain_current_contact_details())
+        control1.append(self.control_1_20_ensure_security_contact_details())
+        control1.append(self.control_1_21_ensure_iam_instance_roles_used())
+        control1.append(self.control_1_22_ensure_incident_management_roles())
+        control1.append(self.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
+        control1.append(self.control_1_24_no_overly_permissive_policies())
+        #control2 = []
+        #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+        #control2.append(self.control_2_2_ensure_cloudtrail_validation(cloud_trails))
+        #control2.append(self.control_2_3_ensure_cloudtrail_bucket_not_public(cloud_trails))
+        #control2.append(self.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloud_trails))
+        #control2.append(self.control_2_5_ensure_config_all_regions(regions))
+        #control2.append(self.control_2_6_ensure_cloudtrail_bucket_logging(cloud_trails))
+        #control2.append(self.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
+        #control2.append(self.control_2_8_ensure_kms_cmk_rotation(regions))
+
         control3 = []
         control3.append(self.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
         control3.append(self.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloud_trails))
@@ -177,11 +215,1165 @@ class Auditor(LambdaBase):
         control4.append(self.control_4_4_ensure_default_security_groups_restricts_traffic(regions))
         control4.append(self.control_4_5_ensure_route_tables_are_least_access(regions))
         controls = []
+        controls.append(control1)
         controls.append(control3)
         controls.append(control4)
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             Auditor.json_output(controls)
+
+            # --- 1 Identity and Access Management ---
+
+            # --- 1 Identity and Access Management ---
+
+    # 1.1 Avoid the use of the "root" account (Scored)
+    def control_1_1_root_use(self, credreport):
+                """Summary
+                Args:
+                    credreport (TYPE): Description
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.1"
+                description = "Avoid the use of the root account"
+                scored = True
+                if "Fail" in credreport:  # Report failure in control
+                    sys.exit(credreport)
+                # Check if root is used in the last 24h
+                now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+                frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+                try:
+                    pwdDelta = (datetime.strptime(now, frm) - datetime.strptime(credreport[0]['password_last_used'],
+                                                                                frm))
+                    if (pwdDelta.days == self.CONTROL_1_1_DAYS) & (pwdDelta.seconds > 0):  # Used within last 24h
+                        failReason = "Used within 24h"
+                        result = False
+                except:
+                    if credreport[0]['password_last_used'] == "N/A" or "no_information":
+                        pass
+                    else:
+                        print("Something went wrong")
+
+                try:
+                    key1Delta = (
+                            datetime.strptime(now, frm) - datetime.strptime(
+                        credreport[0]['access_key_1_last_used_date'], frm))
+                    if (key1Delta.days == self.CONTROL_1_1_DAYS) & (key1Delta.seconds > 0):  # Used within last 24h
+                        failReason = "Used within 24h"
+                        result = False
+                except:
+                    if credreport[0]['access_key_1_last_used_date'] == "N/A" or "no_information":
+                        pass
+                    else:
+                        print("Something went wrong")
+                try:
+                    key2Delta = datetime.strptime(now, frm) - datetime.strptime(
+                        credreport[0]['access_key_2_last_used_date'],
+                        frm)
+                    if (key2Delta.days == self.CONTROL_1_1_DAYS) & (key2Delta.seconds > 0):  # Used within last 24h
+                        failReason = "Used within 24h"
+                        result = False
+                except:
+                    if credreport[0]['access_key_2_last_used_date'] == "N/A" or "no_information":
+                        pass
+                    else:
+                        print("Something went wrong")
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+    # 1.2 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password (Scored)
+    def control_1_2_mfa_on_password_enabled_iam(self, credreport):
+                """Summary
+                Args:
+                    credreport (TYPE): Description
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.2"
+                description = "Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password"
+                scored = True
+                for i in range(len(credreport)):
+                    # Verify if the user have a password configured
+                    if credreport[i]['password_enabled'] == "true":
+                        # Verify if password users have MFA assigned
+                        if credreport[i]['mfa_active'] == "false":
+                            result = False
+                            failReason = "No MFA on users with password. "
+                            offenders.append(str(credreport[i]['arn']))
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+    # 1.3 Ensure credentials unused for 90 days or greater are disabled (Scored)
+    def control_1_3_unused_credentials(slef, credreport):
+                """Summary
+                Args:
+                    credreport (TYPE): Description
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.3"
+                description = "Ensure credentials unused for 90 days or greater are disabled"
+                scored = True
+                # Get current time
+                now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+                frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+                # Look for unused credentails
+                for i in range(len(credreport)):
+                    if credreport[i]['password_enabled'] == "true":
+                        try:
+                            delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['password_last_used'],
+                                                                                    frm)
+                            # Verify password have been used in the last 90 days
+                            if delta.days > 90:
+                                result = False
+                                failReason = "Credentials unused > 90 days detected. "
+                                offenders.append(str(credreport[i]['arn']) + ":password")
+                        except:
+                            pass  # Never used
+                    if credreport[i]['access_key_1_active'] == "true":
+                        try:
+                            delta = datetime.strptime(now, frm) - datetime.strptime(
+                                credreport[i]['access_key_1_last_used_date'], frm)
+                            # Verify password have been used in the last 90 days
+                            if delta.days > 90:
+                                result = False
+                                failReason = "Credentials unused > 90 days detected. "
+                                offenders.append(str(credreport[i]['arn']) + ":key1")
+                        except:
+                            pass
+                    if credreport[i]['access_key_2_active'] == "true":
+                        try:
+                            delta = datetime.strptime(now, frm) - datetime.strptime(
+                                credreport[i]['access_key_2_last_used_date'], frm)
+                            # Verify password have been used in the last 90 days
+                            if delta.days > 90:
+                                result = False
+                                failReason = "Credentials unused > 90 days detected. "
+                                offenders.append(str(credreport[i]['arn']) + ":key2")
+                        except:
+                            # Never used
+                            pass
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+    # 1.4 Ensure access keys are rotated every 90 days or less (Scored)
+    def control_1_4_rotated_keys(self, credreport):
+                """Summary
+                Args:
+                    credreport (TYPE): Description
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.4"
+                description = "Ensure access keys are rotated every 90 days or less"
+                scored = True
+                # Get current time
+                now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+                frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+                # Look for unused credentails
+                for i in range(len(credreport)):
+                    if credreport[i]['access_key_1_active'] == "true":
+                        try:
+                            delta = datetime.strptime(now, frm) - datetime.strptime(
+                                credreport[i]['access_key_1_last_rotated'],
+                                frm)
+                            # Verify keys have rotated in the last 90 days
+                            if delta.days > 90:
+                                result = False
+                                failReason = "Key rotation >90 days or not used since rotation"
+                                offenders.append(str(credreport[i]['arn']) + ":unrotated key1")
+                        except:
+                            pass
+                        try:
+                            last_used_datetime = datetime.strptime(credreport[i]['access_key_1_last_used_date'], frm)
+                            last_rotated_datetime = datetime.strptime(credreport[i]['access_key_1_last_rotated'], frm)
+                            # Verify keys have been used since rotation.
+                            if last_used_datetime < last_rotated_datetime:
+                                result = False
+                                failReason = "Key rotation >90 days or not used since rotation"
+                                offenders.append(str(credreport[i]['arn']) + ":unused key1")
+                        except:
+                            pass
+                    if credreport[i]['access_key_2_active'] == "true":
+                        try:
+                            delta = datetime.strptime(now, frm) - datetime.strptime(
+                                credreport[i]['access_key_2_last_rotated'],
+                                frm)
+                            # Verify keys have rotated in the last 90 days
+                            if delta.days > 90:
+                                result = False
+                                failReason = "Key rotation >90 days or not used since rotation"
+                                offenders.append(str(credreport[i]['arn']) + ":unrotated key2")
+                        except:
+                            pass
+                        try:
+                            last_used_datetime = datetime.strptime(credreport[i]['access_key_2_last_used_date'], frm)
+                            last_rotated_datetime = datetime.strptime(credreport[i]['access_key_2_last_rotated'], frm)
+                            # Verify keys have been used since rotation.
+                            if last_used_datetime < last_rotated_datetime:
+                                result = False
+                                failReason = "Key rotation >90 days or not used since rotation"
+                                offenders.append(str(credreport[i]['arn']) + ":unused key2")
+                        except:
+                            pass
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+    # 1.5 Ensure IAM password policy requires at least one uppercase letter (Scored)
+    def control_1_5_password_policy_uppercase(self, passwordpolicy):
+                """Summary
+                Args:
+                    passwordpolicy (TYPE): Description
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.5"
+                description = "Ensure IAM password policy requires at least one uppercase letter"
+                scored = True
+                if passwordpolicy is False:
+                    result = False
+                    failReason = "Account does not have a IAM password policy."
+                else:
+                    if passwordpolicy['RequireUppercaseCharacters'] is False:
+                        result = False
+                        failReason = "Password policy does not require at least one uppercase letter"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+    # 1.6 Ensure IAM password policy requires at least one lowercase letter (Scored)
+    def control_1_6_password_policy_lowercase(self, passwordpolicy):
+                """Summary
+                Args:
+                    passwordpolicy (TYPE): Description
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.6"
+                description = "Ensure IAM password policy requires at least one lowercase letter"
+                scored = True
+                if passwordpolicy is False:
+                    result = False
+                    failReason = "Account does not have a IAM password policy."
+                else:
+                    if passwordpolicy['RequireLowercaseCharacters'] is False:
+                        result = False
+                        failReason = "Password policy does not require at least one uppercase letter"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+    # 1.7 Ensure IAM password policy requires at least one symbol (Scored)
+    def control_1_7_password_policy_symbol(self, passwordpolicy):
+                """Summary
+
+                Args:
+                    passwordpolicy (TYPE): Description
+
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.7"
+                description = "Ensure IAM password policy requires at least one symbol"
+                scored = True
+                if passwordpolicy is False:
+                    result = False
+                    failReason = "Account does not have a IAM password policy."
+                else:
+                    if passwordpolicy['RequireSymbols'] is False:
+                        result = False
+                        failReason = "Password policy does not require at least one symbol"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+    # 1.8 Ensure IAM password policy requires at least one number (Scored)
+    def control_1_8_password_policy_number(self, passwordpolicy):
+                """Summary
+
+                Args:
+                    passwordpolicy (TYPE): Description
+
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.8"
+                description = "Ensure IAM password policy requires at least one number"
+                scored = True
+                if passwordpolicy is False:
+                    result = False
+                    failReason = "Account does not have a IAM password policy."
+                else:
+                    if passwordpolicy['RequireNumbers'] is False:
+                        result = False
+                        failReason = "Password policy does not require at least one number"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.9 Ensure IAM password policy requires minimum length of 14 or greater (Scored)
+    def control_1_9_password_policy_length(self, passwordpolicy):
+                """Summary
+
+                Args:
+                    passwordpolicy (TYPE): Description
+
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.9"
+                description = "Ensure IAM password policy requires minimum length of 14 or greater"
+                scored = True
+                if passwordpolicy is False:
+                    result = False
+                    failReason = "Account does not have a IAM password policy."
+                else:
+                    if passwordpolicy['MinimumPasswordLength'] < 14:
+                        result = False
+                        failReason = "Password policy does not require at least 14 characters"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.10 Ensure IAM password policy prevents password reuse (Scored)
+    def control_1_10_password_policy_reuse(self, passwordpolicy):
+                """Summary
+
+                Args:
+                    passwordpolicy (TYPE): Description
+
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.10"
+                description = "Ensure IAM password policy prevents password reuse"
+                scored = True
+                if passwordpolicy is False:
+                    result = False
+                    failReason = "Account does not have a IAM password policy."
+                else:
+                    try:
+                        if passwordpolicy['PasswordReusePrevention'] == 24:
+                            pass
+                        else:
+                            result = False
+                            failReason = "Password policy does not prevent reusing last 24 passwords"
+                    except:
+                        result = False
+                        failReason = "Password policy does not prevent reusing last 24 passwords"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.11 Ensure IAM password policy expires passwords within 90 days or less (Scored)
+    def control_1_11_password_policy_expire(self, passwordpolicy):
+                """Summary
+
+                Args:
+                    passwordpolicy (TYPE): Description
+
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.11"
+                description = "Ensure IAM password policy expires passwords within 90 days or less"
+                scored = True
+                if passwordpolicy is False:
+                    result = False
+                    failReason = "Account does not have a IAM password policy."
+                else:
+                    if passwordpolicy['ExpirePasswords'] is True:
+                        if 0 < passwordpolicy['MaxPasswordAge'] > 90:
+                            result = False
+                            failReason = "Password policy does not expire passwords after 90 days or less"
+                    else:
+                        result = False
+                        failReason = "Password policy does not expire passwords after 90 days or less"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.12 Ensure no root account access key exists (Scored)
+    def control_1_12_root_key_exists(self, credreport):
+                """Summary
+
+                Args:
+                    credreport (TYPE): Description
+
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.12"
+                description = "Ensure no root account access key exists"
+                scored = True
+                if (credreport[0]['access_key_1_active'] == "true") or (credreport[0]['access_key_2_active'] == "true"):
+                    result = False
+                    failReason = "Root have active access keys"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.13 Ensure MFA is enabled for the "root" account (Scored)
+    def control_1_13_root_mfa_enabled(self):
+                """Summary
+
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.13"
+                description = "Ensure MFA is enabled for the root account"
+                scored = True
+                response = self.connection_manager.call(
+                    service='iam',
+                    command='get_account_summary',
+                    kwargs=None
+                )
+                # response = Audit.IAM_CLIENT.get_account_summary()
+                if response['SummaryMap']['AccountMFAEnabled'] != 1:
+                    result = False
+                    failReason = "Root account not using MFA"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+                # 1.14 Ensure hardware MFA is enabled for the "root" account (Scored)
+
+    def control_1_14_root_hardware_mfa_enabled(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.14"
+                description = "Ensure hardware MFA is enabled for the root account"
+                scored = True
+                # First verify that root is using MFA (avoiding false positive)
+                response = self.connection_manager.call(
+                    service='iam',
+                    command='get_account_summary',
+                    kwargs=None
+                )
+                # Audit.IAM_CLIENT.get_account_summary()
+                mfa_kwargs = {
+                    "operation_name": 'list_virtual_mfa_devices'
+                }
+                if response['SummaryMap']['AccountMFAEnabled'] == 1:
+                    paginator = self.connection_manager.call(
+                        service='iam',
+                        command='get_paginator',
+                        kwargs=mfa_kwargs
+                    )
+
+                    # Audit.IAM_CLIENT.get_paginator('list_virtual_mfa_devices')
+                    response_iterator = paginator.paginate(
+                        AssignmentStatus='Any',
+                    )
+                    pagedResult = []
+                    for page in response_iterator:
+                        for n in page['VirtualMFADevices']:
+                            pagedResult.append(n)
+                    if "mfa/root-account-mfa-device" in str(pagedResult):
+                        failReason = "Root account not using hardware MFA"
+                        result = False
+                else:
+                    result = False
+                    failReason = "Root account not using MFA"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+                # 1.15 Ensure security questions are registered in the AWS account (Not Scored/Manual)
+
+    def control_1_15_security_questions_registered(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = "Manual"
+                failReason = ""
+                offenders = []
+                control = "1.15"
+                description = "Ensure security questions are registered in the AWS account, please verify manually"
+                scored = False
+                failReason = "Control not implemented using API, please verify manually"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+                # 1.16 Ensure IAM policies are attached only to groups or roles (Scored)
+
+    def control_1_16_no_policies_on_iam_users(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.16"
+                description = "Ensure IAM policies are attached only to groups or roles"
+                scored = True
+                # paginator = Audit.IAM_CLIENT.get_paginator('list_users')
+                group_kwargs = {
+                    "operation_name": 'list_users'
+                }
+                paginator = self.connection_manager.call(
+                    service='iam',
+                    command='get_paginator',
+                    kwargs=group_kwargs
+                )
+                response_iterator = paginator.paginate()
+                pagedResult = []
+                for page in response_iterator:
+                    for n in page['Users']:
+                        pagedResult.append(n)
+                offenders = []
+                for n in pagedResult:
+                    UserName = n['UserName']
+                    # policies = Audit.IAM_CLIENT.list_user_policies(
+                    policy_kwargs = {
+                        "UserName": UserName,
+                        "MaxItems": 1
+                    }
+                    policies = self.connection_manager.call(
+                        service="iam",
+                        command="list_user_policies",
+                        kwargs=policy_kwargs
+                    )
+                    # )
+                    if policies['PolicyNames'] != []:
+                        result = False
+                        failReason = "IAM user have inline policy attached"
+                        offenders.append(str(n['Arn']))
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+                # 1.17 Enable detailed billing (Scored)
+
+    def control_1_17_detailed_billing_enabled(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = "Manual"
+                failReason = ""
+                offenders = []
+                control = "1.17"
+                description = "Enable detailed billing, please verify manually"
+                scored = True
+                failReason = "Control not implemented using API, please verify manually"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.18 Ensure IAM Master and IAM Manager roles are active (Scored)
+    def control_1_18_ensure_iam_master_and_manager_roles(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = "True"
+                failReason = "No IAM Master or IAM Manager role created"
+                offenders = []
+                control = "1.18"
+                description = "Ensure IAM Master and IAM Manager roles are active. Control under review/investigation"
+                scored = True
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.19 Maintain current contact details (Scored)
+    def control_1_19_maintain_current_contact_details(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = "Manual"
+                failReason = ""
+                offenders = []
+                control = "1.19"
+                description = "Maintain current contact details, please verify manually"
+                scored = True
+                failReason = "Control not implemented using API, please verify manually"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.20 Ensure security contact information is registered (Scored)
+    def control_1_20_ensure_security_contact_details(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = "Manual"
+                failReason = ""
+                offenders = []
+                control = "1.20"
+                description = "Ensure security contact information is registered, please verify manually"
+                scored = True
+                failReason = "Control not implemented using API, please verify manually"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.21 Ensure IAM instance roles are used for AWS resource access from instances (Scored)
+    def control_1_21_ensure_iam_instance_roles_used(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.21"
+                description = "Ensure IAM instance roles are used for AWS resource access from instances, application code is not audited"
+                scored = True
+                failReason = "Instance not assigned IAM role for EC2"
+                # client = boto3.client('ec2')
+                response = self.connection_manager.call(
+                    service='ec2',
+                    command='describe_instances',
+                    kwargs=None
+                )  # client.describe_instances()
+                offenders = []
+                for n, _ in enumerate(response['Reservations']):
+                    try:
+                        if response['Reservations'][n]['Instances'][0]['IamInstanceProfile']:
+                            pass
+                    except:
+                        result = False
+                        offenders.append(str(response['Reservations'][n]['Instances'][0]['InstanceId']))
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.22 Ensure a support role has been created to manage incidents with AWS Support (Scored)
+    def control_1_22_ensure_incident_management_roles(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.22"
+                description = "Ensure a support role has been created to manage incidents with AWS Support"
+                scored = True
+                offenders = []
+                policy_kwargs = {
+                    "PolicyArn": 'arn:aws:iam::aws:policy/AWSSupportAccess'
+                }
+                try:
+                    # policy_kwargs={
+                    #     "PolicyArn" : 'arn:aws:iam::aws:policy/AWSSupportAccess'
+                    # }
+                    response = self.connection_manager.call(
+                        service='iam',
+                        command='list_entities_for_policy',
+                        kwargs=policy_kwargs
+                    )
+                    # Audit.IAM_CLIENT.list_entities_for_policy(
+                    # PolicyArn='arn:aws:iam::aws:policy/AWSSupportAccess'
+                    if (len(response['PolicyGroups']) + len(response['PolicyUsers']) + len(
+                            response['PolicyRoles'])) == 0:
+                        result = False
+                        failReason = "No user, group or role assigned AWSSupportAccess"
+                except:
+                    result = False
+                    failReason = "AWSSupportAccess policy not created"
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.23 Do not setup access keys during initial user setup for all IAM users that have a console password (Not Scored)
+    def control_1_23_no_active_initial_access_keys_with_iam_user(self, credreport):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.23"
+                description = "Do not setup access keys during initial user setup for all IAM users that have a console password"
+                scored = False
+                offenders = []
+                for n, _ in enumerate(credreport):
+                    user_kwargs = {
+                        "UserName": str(credreport[n]['user'])
+                    }
+                    if (credreport[n]['access_key_1_active'] or credreport[n][
+                        'access_key_2_active'] == 'true') and n > 0:
+                        # response = Audit.IAM_CLIENT.list_access_keys(
+                        #     UserName=str(credreport[n]['user'])
+                        # )
+                        response = self.connection_manager.call(
+                            service='iam',
+                            command='list_access_keys',
+                            kwargs=user_kwargs
+                        )
+                        for m in response['AccessKeyMetadata']:
+                            if re.sub(r"\s", "T", str(m['CreateDate'])) == credreport[n]['user_creation_time']:
+                                result = False
+                                failReason = "Users with keys created at user creation time found"
+                                offenders.append(str(credreport[n]['arn']) + ":" + str(m['AccessKeyId']))
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+            # 1.24  Ensure IAM policies that allow full "*:*" administrative privileges are not created (Scored)
+    def control_1_24_no_overly_permissive_policies(self):
+                """Summary
+                Returns:
+                    TYPE: Description
+                """
+                result = True
+                failReason = ""
+                offenders = []
+                control = "1.24"
+                description = "Ensure IAM policies that allow full administrative privileges are not created"
+                scored = True
+                offenders = []
+                page_kwargs = {
+                    "operation_name": 'list_policies'
+                }
+                paginator = self.connection_manager.call(
+                    service='iam',
+                    command='get_paginator',
+                    kwargs=page_kwargs
+                )  # Audit.IAM_CLIENT.get_paginator('list_policies')
+                response_iterator = paginator.paginate(
+                    Scope='Local',
+                    OnlyAttached=False,
+                )
+                pagedResult = []
+                for page in response_iterator:
+                    for n in page['Policies']:
+                        pagedResult.append(n)
+                for m in pagedResult:
+                    policy_args = {
+                        "PolicyArn": m['Arn'],
+                        "VersionId": m['DefaultVersionId']
+                    }
+                    policy = self.connection_manager.call(
+                        service='iam',
+                        command='get_policy_version',
+                        kwargs=policy_args
+                    )
+                    # Audit.IAM_CLIENT.get_policy_version(
+                    #     PolicyArn=m['Arn'],
+                    #     VersionId=m['DefaultVersionId']
+
+                    statements = []
+                    # a policy may contain a single statement, a single statement in an array, or multiple statements in an array
+                    if isinstance(policy['PolicyVersion']['Document']['Statement'], list):
+                        for statement in policy['PolicyVersion']['Document']['Statement']:
+                            statements.append(statement)
+                    else:
+                        statements.append(policy['PolicyVersion']['Document']['Statement'])
+
+                    for n in statements:
+                        # a policy statement has to contain either an Action or a NotAction
+                        if 'Action' in n.keys() and n['Effect'] == 'Allow':
+                            if ("'*'" in str(n['Action']) or str(n['Action']) == "*") and (
+                                    "'*'" in str(n['Resource']) or str(n['Resource']) == "*"):
+                                result = False
+                                failReason = "Found full administrative policy"
+                                offenders.append(str(m['Arn']))
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                        'Description': description, 'ControlId': control}
+
+    def control_2_1_ensure_cloud_trail_all_regions(self, cloudtrails):
+        """Summary
+        Args:
+            cloudtrails (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = False
+        failReason = ""
+        offenders = []
+        control = "2.1"
+        description = "Ensure CloudTrail is enabled in all regions"
+        scored = True
+        for m, n in cloudtrails.items():
+            for o in n:
+                if o['IsMultiRegionTrail']:
+
+                    # client = connection_manager.client('cloudtrail', region_name=m)
+                    # response = client.get_trail_status(
+                    Name = o['TrailARN']
+                    policy_kwargs = None
+                    response = self.connection_manager.call(
+                        service="cloudtrail",
+                        command="get_trail_status",
+                        kwargs=policy_kwargs
+                    )
+                    if response['IsLogging'] is True:
+                        result = True
+                        break
+        if result is False:
+            failReason = "No enabled multi region trails found"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_2_2_ensure_cloudtrail_validation(self, cloudtrails):
+        """Summary
+
+        Args:
+            cloudtrails (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "2.2"
+        description = "Ensure CloudTrail log file validation is enabled"
+        scored = True
+        for m, n in cloudtrails.items():
+            for o in n:
+                if o['LogFileValidationEnabled'] is False:
+                    result = False
+                    failReason = "CloudTrails without log file validation discovered"
+                    offenders.append(str(o['TrailARN']))
+        offenders = set(offenders)
+        offenders = list(offenders)
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+        # 2.3 Ensure the S3 bucket CloudTrail logs to is not publicly accessible (Scored)
+
+    def control_2_3_ensure_cloudtrail_bucket_not_public(self, cloudtrails):
+        """Summary
+
+        Args:
+            cloudtrails (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "2.3"
+        description = "Ensure the S3 bucket CloudTrail logs to is not publicly accessible"
+        scored = True
+        for m, n in cloudtrails.items():
+            for o in n:
+                #  We only want to check cases where there is a bucket
+                if "S3BucketName" in str(o):
+                    try:
+                        """response = Audit.S3_CLIENT.get_bucket_acl(Bucket=o['S3BucketName'])
+                        for p in response['Grants']:
+                            # print("Grantee is " + str(p['Grantee']))
+                           """
+                        perform_audit_kwargs = None
+                        response = self.connection_manager.call(
+                            service="iam",
+                            command="get_bucket_acl",
+                            kwargs=perform_audit_kwargs
+                        )
+                        if re.search(r'(global/AllUsers|global/AuthenticatedUsers)', str(p['Grantee'])):
+                            result = False
+                            offenders.append(str(o['TrailARN']) + ":PublicBucket")
+                            if "Publically" not in failReason:
+                                failReason = failReason + "Publically accessible CloudTrail bucket discovered."
+                    except Exception as e:
+                        result = False
+                        if "AccessDenied" in str(e):
+                            offenders.append(str(o['TrailARN']) + ":AccessDenied")
+                            if "Missing" not in failReason:
+                                failReason = "Missing permissions to verify bucket ACL. " + failReason
+                        elif "NoSuchBucket" in str(e):
+                            offenders.append(str(o['TrailARN']) + ":NoBucket")
+                            if "Trailbucket" not in failReason:
+                                failReason = "Trailbucket doesn't exist. " + failReason
+                        else:
+                            offenders.append(str(o['TrailARN']) + ":CannotVerify")
+                            if "Cannot" not in failReason:
+                                failReason = "Cannot verify bucket ACL. " + failReason
+                else:
+                    result = False
+                    offenders.append(str(o['TrailARN']) + "NoS3Logging")
+                    failReason = "Cloudtrail not configured to log to S3. " + failReason
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+        # 2.4 Ensure CloudTrail trails are integrated with CloudWatch Logs (Scored)
+
+    def control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(self, cloudtrails):
+        """Summary
+
+        Args:
+            cloudtrails (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "2.4"
+        description = "Ensure CloudTrail trails are integrated with CloudWatch Logs"
+        scored = True
+        for m, n in cloudtrails.items():
+            for o in n:
+                try:
+                    if "arn:aws:logs" in o['CloudWatchLogsLogGroupArn']:
+                        pass
+                    else:
+                        result = False
+                        failReason = "CloudTrails without CloudWatch Logs discovered"
+                        offenders.append(str(o['TrailARN']))
+                except:
+                    result = False
+                    failReason = "CloudTrails without CloudWatch Logs discovered"
+                    offenders.append(str(o['TrailARN']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+        # 2.5 Ensure AWS Config is enabled in all regions (Scored)
+
+    def control_2_5_ensure_config_all_regions(self, regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "2.5"
+        description = "Ensure AWS Config is enabled in all regions"
+        scored = True
+        globalConfigCapture = False  # Only one region needs to capture global events
+        for n in regions:
+            # configClient = boto3.client('config', region_name=n)
+            # response = configClient.describe_configuration_recorder_status()
+            group_kwargs = None
+            response = self.connection_manager.call(
+                service='config',
+                command='describe_configuration_recorder_status',
+                kwargs=group_kwargs
+            )
+            # Get recording status
+            try:
+                if not response['ConfigurationRecordersStatus'][0]['recording'] is True:
+                    result = False
+                    failReason = "Config not enabled in all regions, not capturing all/global events or delivery channel errors"
+                    offenders.append(str(n) + ":NotRecording")
+            except:
+                result = False
+                failReason = "Config not enabled in all regions, not capturing all/global events or delivery channel errors"
+                offenders.append(str(n) + ":NotRecording")
+
+            # Verify that each region is capturing all events
+            # response = configClient.describe_configuration_recorders()
+            group_kwargs = None
+            response = self.connection_manager.call(
+                service='config',
+                command='describe_configuration_recorders',
+                kwargs=group_kwargs
+            )
+            try:
+                if not response['ConfigurationRecorders'][0]['recordingGroup']['allSupported'] is True:
+                    result = False
+                    failReason = "Config not enabled in all regions, not capturing all/global events or delivery channel errors"
+                    offenders.append(str(n) + ":NotAllEvents")
+            except:
+                pass  # This indicates that Config is disabled in the region and will be captured above.
+
+            # Check if region is capturing global events. Fail is verified later since only one region needs to capture them.
+            try:
+                if response['ConfigurationRecorders'][0]['recordingGroup']['includeGlobalResourceTypes'] is True:
+                    globalConfigCapture = True
+            except:
+                pass
+
+            # Verify the delivery channels
+            # response = configClient.describe_delivery_channel_status()
+            group_kwargs = None
+            response = self.connection_manager.call(
+                service='config',
+                command='describe_delivery_channel_status',
+                kwargs=group_kwargs
+            )
+            try:
+                if response['DeliveryChannelsStatus'][0]['configHistoryDeliveryInfo']['lastStatus'] != "SUCCESS":
+                    result = False
+                    failReason = "Config not enabled in all regions, not capturing all/global events or delivery channel errors"
+                    offenders.append(str(n) + ":S3orSNSDelivery")
+            except:
+                pass  # Will be captured by earlier rule
+            try:
+                if response['DeliveryChannelsStatus'][0]['configStreamDeliveryInfo']['lastStatus'] != "SUCCESS":
+                    result = False
+                    failReason = "Config not enabled in all regions, not capturing all/global events or delivery channel errors"
+                    offenders.append(str(n) + ":SNSDelivery")
+            except:
+                pass  # Will be captured by earlier rule
+
+        # Verify that global events is captured by any region
+        if globalConfigCapture is False:
+            result = False
+            failReason = "Config not enabled in all regions, not capturing all/global events or delivery channel errors"
+            offenders.append("Global:NotRecording")
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+        # 2.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket (Scored)
+
+    def control_2_6_ensure_cloudtrail_bucket_logging(self, cloudtrails):
+        """Summary
+
+        Args:
+            cloudtrails (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "2.6"
+        description = "Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket"
+        scored = True
+        for m, n in cloudtrails.items():
+            for o in n:
+                # it is possible to have a cloudtrail configured with a nonexistant bucket
+                try:
+                    # response = Audit.S3_CLIENT.get_bucket_logging(Bucket=o['S3BucketName'])
+                    group_kwargs = None
+                    response = self.connection_manager.call(
+                        service='iam',
+                        command='get_bucket_logging',
+                        kwargs=group_kwargs
+                    )
+                except:
+                    result = False
+                    failReason = "Cloudtrail not configured to log to S3. "
+                    offenders.append(str(o['TrailARN']))
+                try:
+                    if response['LoggingEnabled']:
+                        pass
+                except:
+                    result = False
+                    failReason = failReason + "CloudTrail S3 bucket without logging discovered"
+                    offenders.append("Trail:" + str(o['TrailARN']) + " - S3Bucket:" + str(o['S3BucketName']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+        # 2.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs (Scored)
+
+    def control_2_7_ensure_cloudtrail_encryption_kms(self, cloudtrails):
+        """Summary
+
+        Args:
+            cloudtrails (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "2.7"
+        description = "Ensure CloudTrail logs are encrypted at rest using KMS CMKs"
+        scored = True
+        for m, n in cloudtrails.items():
+            for o in n:
+                try:
+                    if o['KmsKeyId']:
+                        pass
+                except:
+                    result = False
+                    failReason = "CloudTrail not using KMS CMK for encryption discovered"
+                    offenders.append("Trail:" + str(o['TrailARN']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+        # 2.8 Ensure rotation for customer created CMKs is enabled (Scored)
+
+    def control_2_8_ensure_kms_cmk_rotation(self, regions):
+        """Summary
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "2.8"
+        description = "Ensure rotation for customer created CMKs is enabled"
+        scored = True
+        for n in regions:
+            # kms_client = boto3.client('kms', region_name=n)
+            # paginator = kms_client.get_paginator('list_keys')
+            # response_iterator = paginator.paginate()
+            group_kwargs = {
+                "operation_name": 'list_keys'
+            }
+            paginator = self.connection_manager.call(
+                service='kms',
+                command='get_paginator',
+                kwargs=group_kwargs
+            )
+            response_iterator = paginator.paginate()
+            for page in response_iterator:
+                for n in page['Keys']:
+                    try:
+                        # rotationStatus = kms_client.get_key_rotation_status(KeyId=n['KeyId'])
+                        # response_iterator = paginator.paginate ()
+                        KeyId = n['KeyId']
+
+                        group_kwargs = {
+                            KeyId: 'KeyId'
+                        }
+                        paginator = self.connection_manager.call(
+                            service='kms',
+                            command='get_key_rotation_status',
+                            kwargs=group_kwargs
+                        )
+                        response_iterator = paginator.paginate()
+                        if rotationStatus['KeyRotationEnabled'] is False:
+                            keyDescription = kms_client.describe_key(KeyId=n['KeyId'])
+
+                            if "Default master key that protects my" not in str(
+                                    keyDescription['KeyMetadata']['Description']):  # Ignore service keys
+                                result = False
+                                failReason = "KMS CMK rotation not enabled"
+                                offenders.append("Key:" + str(keyDescription['KeyMetadata']['Arn']))
+                    except:
+                        pass  # Ignore keys without permission, for example ACM key
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
 
             # --- Monitoring ---
 
@@ -201,16 +1393,16 @@ class Auditor(LambdaBase):
         scored = True
         failReason = "Incorrect log metric alerts for unauthorized_api_calls"
         for m, n in cloudtrails.items():
+            print(m)
             for o in n:
                 try:
 
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
                         #client = connection_manager.client('logs', region_name=m)
-                        m = 'us-eat-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName' : group,
-                            'region_name' :m
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -220,7 +1412,8 @@ class Auditor(LambdaBase):
                         """
                         filters = client.describe_metric_filters(
                             logGroupName=group
-                        )"""
+                        )
+                        """
                         for p in filters['metricFilters']:
                             patterns = ["\$\.errorCode\s*=\s*\"?\*UnauthorizedOperation(\"|\)|\s)",
                                         "\$\.errorCode\s*=\s*\"?AccessDenied\*(\"|\)|\s)"]
@@ -228,12 +1421,9 @@ class Auditor(LambdaBase):
                                 #cwclient = connection_manager.client('cloudwatch', region_name=m)
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-eat-1'
                                 cloud_kwargs = {
                                     'MetricName' : MetricName,
                                     'Namespace' : Namespace,
-                                    'region_name': m
-
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -245,14 +1435,13 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-eat-1'
+
                                 cloud_kwargs = {
                                     'TopicArn':TopicArn,
-                                    'region_name': m
                                 }
-                                snsclient = self.connection_manager.call(
-                                    service='cloudwatch',
-                                    command='describe_alarms_for_metric',
+                                subscribers = self.connection_manager.call(
+                                    service='sns',
+                                    command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
                                 )
                                 """snsClient = connection_manager.client('sns', region_name=m)
@@ -286,10 +1475,10 @@ class Auditor(LambdaBase):
                     try:
                         if o['CloudWatchLogsLogGroupArn']:
                             group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                            m = 'us-eat-1'
+                            self.setRegion(region, iam_role=None)
                             cloud_kwargs = {
                                 'logGroupName': group,
-                                'region_name': m
+
                             }
                             filters = self.connection_manager.call(
                                 service='logs',
@@ -307,11 +1496,11 @@ class Auditor(LambdaBase):
                                 if find_in_string(patterns, str(p['filterPattern'])):
                                     MetricName = p['metricTransformations'][0]['metricName'],
                                     Namespace = p['metricTransformations'][0]['metricNamespace']
-                                    m = 'us-eat-1'
+
                                     cloud_kwargs = {
                                         'MetricName': MetricName,
                                         'Namespace': Namespace,
-                                        'region_name': m
+
 
                                     }
                                     response = self.connection_manager.call(
@@ -327,13 +1516,13 @@ class Auditor(LambdaBase):
                                     )"""
 
                                     TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                    m = 'us-eat-1'
+
                                     cloud_kwargs = {
                                         'TopicArn': TopicArn,
-                                        'region_name': m
+
                                     }
-                                    snsclient = self.connection_manager.call(
-                                        service='cloudwatch',
+                                    subscribers = self.connection_manager.call(
+                                        service='sns',
                                         command='describe_alarms_for_metric',
                                         kwargs=cloud_kwargs
                                     )
@@ -371,10 +1560,10 @@ class Auditor(LambdaBase):
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
                         #client = connection_manager.client('logs', region_name=m)
-                        m='us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs={
                             'logGroupName' : group,
-                             'region_name' : m
+
                         }
                         """
                         filters = client.describe_metric_filters(
@@ -392,11 +1581,11 @@ class Auditor(LambdaBase):
                             if find_in_string(patterns, str(p['filterPattern'])):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName':MetricName,
                                     'Namespace':Namespace,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -411,12 +1600,11 @@ class Auditor(LambdaBase):
                                 )"""
 
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m='us-east-1'
+
                                 cloud_kwargs={
-                                    'TopicArn':TopicArn,
-                                    'region_name': m
+                                    'TopicArn':TopicArn
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -453,11 +1641,16 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
-                            'logGroupName': group,
-                            'region_name': m
+                            'logGroupName': group
                         }
+                        filters = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
+                        )
+
                         """
                         client = connection_manager.client('logs', region_name=m)
                         filters = client.describe_metric_filters(
@@ -484,11 +1677,11 @@ class Auditor(LambdaBase):
                             if find_in_string(patterns, str(p['filterPattern'])):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -502,12 +1695,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -546,10 +1739,9 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m='us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs={
-                            'logGroupName' : group,
-                            'region_name':m
+                            'logGroupName' : group
                         }
                         filters=self.connection_manager.call(
                             service='logs',
@@ -571,7 +1763,6 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m='us-east-1'
                                 cloud_kwargs={
                                     'MetricName':MetricName,
                                     'Namespace':Namespace
@@ -588,12 +1779,12 @@ class Auditor(LambdaBase):
                                 )"""
 
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn':TopicArn,
-                                    'region_name':m
+
                                 }
-                                response=self.connection_manager.call(
+                                subscribers=self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -631,10 +1822,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -655,7 +1846,6 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -672,12 +1862,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -716,10 +1906,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -740,7 +1930,6 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -758,12 +1947,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -801,10 +1990,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -833,7 +2022,6 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -850,12 +2038,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -894,10 +2082,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -920,7 +2108,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -938,12 +2126,12 @@ class Auditor(LambdaBase):
                                 )"""
 
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -982,10 +2170,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1009,7 +2197,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -1026,12 +2214,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -1070,10 +2258,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1097,7 +2285,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -1114,12 +2302,11 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -1158,10 +2345,9 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1186,7 +2372,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -1203,12 +2389,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -1247,10 +2433,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1275,11 +2461,11 @@ class Auditor(LambdaBase):
                             if find_in_string(patterns, str(p['filterPattern'])):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace,
-                                    'region_name':m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -1293,12 +2479,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -1337,10 +2523,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1369,11 +2555,11 @@ class Auditor(LambdaBase):
                             if find_in_string(patterns, str(p['filterPattern'])):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -1387,12 +2573,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -1654,6 +2840,9 @@ class Auditor(LambdaBase):
                         pass
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def setRegion(self, region, iam_role=None):
+        self.connection_manager = ConnectionManager(region, iam_role)
 
     def json_output(controlResult):
         """Summary
