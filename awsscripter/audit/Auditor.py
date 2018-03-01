@@ -144,40 +144,40 @@ class Auditor(LambdaBase):
 
         # Run individual controls.
         # Comment out unwanted controls
-        #control1 = []
-        #control1.append(self.control_1_1_root_use(cred_report))
-        #control1.append(self.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        #control1.append(self.control_1_3_unused_credentials(cred_report))
-        #control1.append(self.control_1_4_rotated_keys(cred_report))
-        #control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
-        #control1.append(self.control_1_6_password_policy_lowercase(passwordpolicy))
-        #control1.append(self.control_1_7_password_policy_symbol(passwordpolicy))
-        #control1.append(self.control_1_8_password_policy_number(passwordpolicy))
-        #control1.append(self.control_1_9_password_policy_length(passwordpolicy))
-        #control1.append(self.control_1_10_password_policy_reuse(passwordpolicy))
-        #control1.append(self.control_1_11_password_policy_expire(passwordpolicy))
-        #control1.append(self.control_1_12_root_key_exists(cred_report))
-        #control1.append(self.control_1_13_root_mfa_enabled())
-        #control1.append(self.control_1_14_root_hardware_mfa_enabled())
-        #control1.append(self.control_1_15_security_questions_registered())
-        #control1.append(self.control_1_16_no_policies_on_iam_users())
-        #control1.append(self.control_1_17_detailed_billing_enabled())
-        #control1.append(self.control_1_18_ensure_iam_master_and_manager_roles())
-        #control1.append(self.control_1_19_maintain_current_contact_details())
-        #control1.append(self.control_1_20_ensure_security_contact_details())
-        #control1.append(self.control_1_21_ensure_iam_instance_roles_used())
-        #control1.append(self.control_1_22_ensure_incident_management_roles())
-        #control1.append(self.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
-        #control1.append(self.control_1_24_no_overly_permissive_policies())
-        # control2 = []
-        # control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloudtrails))
-        # control2.append(self.control_2_2_ensure_cloudtrail_validation(cloudtrails))
-        # control2.append(self.control_2_3_ensure_cloudtrail_bucket_not_public(cloudtrails))
-        # control2.append(self.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloudtrails))
-        # control2.append(self.control_2_5_ensure_config_all_regions(region_list))
-        # control2.append(self.control_2_6_ensure_cloudtrail_bucket_logging(cloudtrails))
-        # control2.append(self.control_2_7_ensure_cloudtrail_encryption_kms(cloudtrails))
-        # control2.append(self.control_2_8_ensure_kms_cmk_rotation(region_list))
+        control1 = []
+        control1.append(self.control_1_1_root_use(cred_report))
+        control1.append(self.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control_1_3_unused_credentials(cred_report))
+        control1.append(self.control_1_4_rotated_keys(cred_report))
+        control1.append(self.control_1_5_password_policy_uppercase(passwordpolicy))
+        control1.append(self.control_1_6_password_policy_lowercase(passwordpolicy))
+        control1.append(self.control_1_7_password_policy_symbol(passwordpolicy))
+        control1.append(self.control_1_8_password_policy_number(passwordpolicy))
+        control1.append(self.control_1_9_password_policy_length(passwordpolicy))
+        control1.append(self.control_1_10_password_policy_reuse(passwordpolicy))
+        control1.append(self.control_1_11_password_policy_expire(passwordpolicy))
+        control1.append(self.control_1_12_root_key_exists(cred_report))
+        control1.append(self.control_1_13_root_mfa_enabled())
+        control1.append(self.control_1_14_root_hardware_mfa_enabled())
+        control1.append(self.control_1_15_security_questions_registered())
+        control1.append(self.control_1_16_no_policies_on_iam_users())
+        control1.append(self.control_1_17_detailed_billing_enabled())
+        control1.append(self.control_1_18_ensure_iam_master_and_manager_roles())
+        control1.append(self.control_1_19_maintain_current_contact_details())
+        control1.append(self.control_1_20_ensure_security_contact_details())
+        control1.append(self.control_1_21_ensure_iam_instance_roles_used())
+        control1.append(self.control_1_22_ensure_incident_management_roles())
+        control1.append(self.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
+        control1.append(self.control_1_24_no_overly_permissive_policies())
+        control2 = []
+        control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloudtrails))
+        control2.append(self.control_2_2_ensure_cloudtrail_validation(cloudtrails))
+        control2.append(self.control_2_3_ensure_cloudtrail_bucket_not_public(cloudtrails))
+        control2.append(self.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloudtrails))
+        control2.append(self.control_2_5_ensure_config_all_regions(region_list))
+        control2.append(self.control_2_6_ensure_cloudtrail_bucket_logging(cloudtrails))
+        control2.append(self.control_2_7_ensure_cloudtrail_encryption_kms(cloudtrails))
+        control2.append(self.control_2_8_ensure_kms_cmk_rotation(region_list))
         control3 = []
         control3.append(self.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloudtrails))
         control3.append(self.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloudtrails))
@@ -202,8 +202,8 @@ class Auditor(LambdaBase):
         control4.append(self.control_4_5_ensure_route_tables_are_least_access(region_list))
         # Join results
         controls = []
-        #controls.append(control1)
-        # controls.append(control2)
+        controls.append(control1)
+        controls.append(control2)
         controls.append(control3)
         controls.append(control4)
         # Build JSON structure for console output if enabled
@@ -653,19 +653,10 @@ class Auditor(LambdaBase):
             description = "Ensure MFA is enabled for the root account"
             scored = True
             #response = Audit.IAM_CLIENT.get_account_summary()
-            perform_audit_kwargs = {
-                "Parameters": self._format_parameters(self.parameters),
-                "Capabilities": ['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
-                "NotificationARNs": self.notifications,
-                "Tags": [
-                    {"Key": str(k), "Value": str(v)}
-                    for k, v in self.tags.items()
-                ]
-            }
             response = self.connection_manager.call(
                 service="iam",
                 command="get_account_summary",
-                kwargs=perform_audit_kwargs
+                kwargs=None
             )
             if response['SummaryMap']['AccountMFAEnabled'] != 1:
                 result = False
@@ -687,9 +678,22 @@ class Auditor(LambdaBase):
             description = "Ensure hardware MFA is enabled for the root account"
             scored = True
             # First verify that root is using MFA (avoiding false positive)
-            response = Audit.IAM_CLIENT.get_account_summary()
+            #response = Audit.IAM_CLIENT.get_account_summary()
+            response = self.connection_manager.call(
+                service='iam',
+                command='get_account_summary',
+                kwargs=None
+            )
             if response['SummaryMap']['AccountMFAEnabled'] == 1:
-                paginator = Audit.IAM_CLIENT.get_paginator('list_virtual_mfa_devices')
+                mfa_kwargs = {
+                    "operation_name": 'list_virtual_mfa_devices'
+                }
+                paginator = self.connection_manager.call(
+                    service='iam',
+                    command='get_paginator',
+                    kwargs=mfa_kwargs
+                )
+                #paginator = Audit.IAM_CLIENT.get_paginator('list_virtual_mfa_devices')
                 response_iterator = paginator.paginate(
                     AssignmentStatus='Any',
                 )
@@ -753,13 +757,16 @@ class Auditor(LambdaBase):
             offenders = []
             for n in pagedResult:
                 UserName = n['UserName']
-                #policies = Audit.IAM_CLIENT.list_user_policies(
+                #policies = Audit.IAM_CLIENT.list_user_policies()
                 policy_kwargs = {
                     "UserName": UserName,
                     "MaxItems": 1
                 }
-
-                #)
+                policies = self.connection_manager.call(
+                    service="iam",
+                    command="list_user_policies",
+                    kwargs=policy_kwargs
+                )
                 if policies['PolicyNames'] != []:
                     result = False
                     failReason = "IAM user have inline policy attached"
@@ -848,8 +855,13 @@ class Auditor(LambdaBase):
             description = "Ensure IAM instance roles are used for AWS resource access from instances, application code is not audited"
             scored = True
             failReason = "Instance not assigned IAM role for EC2"
-            client = boto3.client('ec2')
-            response = client.describe_instances()
+            #client = boto3.client('ec2')
+            #response = client.describe_instances()
+            response = self.connection_manager.call(
+                service='ec2',
+                command='describe_instances',
+                kwargs=None
+            )
             offenders = []
             for n, _ in enumerate(response['Reservations']):
                 try:
@@ -876,9 +888,17 @@ class Auditor(LambdaBase):
             scored = True
             offenders = []
             try:
-                response = Audit.IAM_CLIENT.list_entities_for_policy(
-                    PolicyArn='arn:aws:iam::aws:policy/AWSSupportAccess'
+                policy_kwargs = {
+                    "PolicyArn": 'arn:aws:iam::aws:policy/AWSSupportAccess'
+                }
+                response = self.connection_manager.call(
+                    service='iam',
+                    command='list_entities_for_policy',
+                    kwargs=policy_kwargs
                 )
+                """response = Audit.IAM_CLIENT.list_entities_for_policy(
+                    PolicyArn='arn:aws:iam::aws:policy/AWSSupportAccess'
+                )"""
                 if (len(response['PolicyGroups']) + len(response['PolicyUsers']) + len(response['PolicyRoles'])) == 0:
                     result = False
                     failReason = "No user, group or role assigned AWSSupportAccess"
@@ -904,9 +924,17 @@ class Auditor(LambdaBase):
             offenders = []
             for n, _ in enumerate(credreport):
                 if (credreport[n]['access_key_1_active'] or credreport[n]['access_key_2_active'] == 'true') and n > 0:
-                    response = Audit.IAM_CLIENT.list_access_keys(
-                        UserName=str(credreport[n]['user'])
+                    user_kwargs = {
+                        "UserName": str(credreport[n]['user'])
+                    }
+                    response = self.connection_manager.call(
+                        service='iam',
+                        command='list_access_keys',
+                        kwargs=user_kwargs
                     )
+                    """response = Audit.IAM_CLIENT.list_access_keys(
+                        UserName=str(credreport[n]['user'])
+                    )"""
                     for m in response['AccessKeyMetadata']:
                         if re.sub(r"\s", "T", str(m['CreateDate'])) == credreport[n]['user_creation_time']:
                             result = False
@@ -929,7 +957,15 @@ class Auditor(LambdaBase):
             description = "Ensure IAM policies that allow full administrative privileges are not created"
             scored = True
             offenders = []
-            paginator = Audit.IAM_CLIENT.get_paginator('list_policies')
+            page_kwargs = {
+                "operation_name": 'list_policies'
+            }
+            paginator = self.connection_manager.call(
+                service='iam',
+                command='get_paginator',
+                kwargs=page_kwargs
+            )
+            #paginator = Audit.IAM_CLIENT.get_paginator('list_policies')
             response_iterator = paginator.paginate(
                 Scope='Local',
                 OnlyAttached=False,
@@ -987,16 +1023,14 @@ class Auditor(LambdaBase):
 
                     if o['IsMultiRegionTrail']:
                         Name = o['TrailARN']
-                        #m = 'us-east-1'
-                        #cloud_kwargs = {
-                        #    'Name': Name,
-                         #   'region_name': m
-                        #}
                         self.setRegion(m, iam_role=None)
+                        policy_kwargs={
+                            'Name' : Name
+                        }
                         response = self.connection_manager.call(
-                            service='cloudtrail',
-                            command='get_trail_status',
-                            kwargs=cloud_kwargs
+                            service="cloudtrail",
+                            command="get_trail_status",
+                            kwargs=policy_kwargs
                         )
                         """client = boto3.client('cloudtrail', region_name=m)
                         response = client.get_trail_status(
@@ -1149,10 +1183,7 @@ class Auditor(LambdaBase):
         globalConfigCapture = False  # Only one region needs to capture global events
         for n in regions:
             self.setRegion(n, iam_role=None)
-            cloud_kwargs = {
-
-                'region_name': n
-            }
+            cloud_kwargs=None
             response = self.connection_manager.call(
                 service='config',
                 command='describe_configuration_recorder_status',
@@ -1315,13 +1346,12 @@ class Auditor(LambdaBase):
         for n in regions:
             self.setRegion(n, iam_role=None)
             cloud_kwargs = {
-
-                'region_name': n
+                'operation_name': 'list_keys',
             }
             paginator = self.connection_manager.call(
                 service='kms',
                 command='get_paginator',
-                kwargs=cloud_kwargs
+                kwargs = cloud_kwargs
             )
             #kms_client = boto3.client('kms', region_name=n)
             #paginator = kms_client.get_paginator('list_keys')
