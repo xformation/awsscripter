@@ -7,7 +7,7 @@ be set from the input without the data persisting."""
 from __future__ import print_function
 
 #from awsscripter.audit.audit import Audit
-import self as self
+
 from coverage import results
 from os.path import join
 
@@ -18,7 +18,8 @@ from troposphere import Join
 from awsscripter.common.connection_manager import ConnectionManager
 from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.audit.CredReport import CredReport
-from awsscripter.audit.Passwordpolicy import PasswordPolicy
+from awsscripter.audit.PasswordPolicy import PasswordPolicy
+
 from awsscripter.audit.CloudTrails import CloudTrail
 
 import logging
@@ -204,16 +205,17 @@ class Auditor(LambdaBase):
         scored = True
         failReason = "Incorrect log metric alerts for unauthorized_api_calls"
         for m, n in cloudtrails.items():
+
             for o in n:
                 try:
 
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
                         #client = connection_manager.client('logs', region_name=m)
-                        m = 'us-eat-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName' : group,
-                            'region_name' :m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -231,11 +233,11 @@ class Auditor(LambdaBase):
                                 #cwclient = connection_manager.client('cloudwatch', region_name=m)
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-eat-1'
+
                                 cloud_kwargs = {
                                     'MetricName' : MetricName,
                                     'Namespace' : Namespace,
-                                    'region_name': m
+
 
                                 }
                                 response = self.connection_manager.call(
@@ -248,14 +250,14 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-eat-1'
+
                                 cloud_kwargs = {
                                     'TopicArn':TopicArn,
-                                    'region_name': m
+
                                 }
-                                snsclient = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='cloudwatch',
-                                    command='describe_alarms_for_metric',
+                                    command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
                                 )
                                 """snsClient = connection_manager.client('sns', region_name=m)
@@ -289,10 +291,10 @@ class Auditor(LambdaBase):
                     try:
                         if o['CloudWatchLogsLogGroupArn']:
                             group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                            m = 'us-eat-1'
+                            self.setRegion(region, iam_role=None)
                             cloud_kwargs = {
                                 'logGroupName': group,
-                                'region_name': m
+
                             }
                             filters = self.connection_manager.call(
                                 service='logs',
@@ -310,11 +312,11 @@ class Auditor(LambdaBase):
                                 if find_in_string(patterns, str(p['filterPattern'])):
                                     MetricName = p['metricTransformations'][0]['metricName'],
                                     Namespace = p['metricTransformations'][0]['metricNamespace']
-                                    m = 'us-eat-1'
+
                                     cloud_kwargs = {
                                         'MetricName': MetricName,
                                         'Namespace': Namespace,
-                                        'region_name': m
+
 
                                     }
                                     response = self.connection_manager.call(
@@ -330,14 +332,14 @@ class Auditor(LambdaBase):
                                     )"""
 
                                     TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                    m = 'us-eat-1'
+
                                     cloud_kwargs = {
                                         'TopicArn': TopicArn,
-                                        'region_name': m
+
                                     }
-                                    snsclient = self.connection_manager.call(
+                                    subscribers = self.connection_manager.call(
                                         service='cloudwatch',
-                                        command='describe_alarms_for_metric',
+                                        command='list_subscriptions_by_topic',
                                         kwargs=cloud_kwargs
                                     )
                                     """
@@ -374,10 +376,10 @@ class Auditor(LambdaBase):
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
                         #client = connection_manager.client('logs', region_name=m)
-                        m='us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs={
                             'logGroupName' : group,
-                             'region_name' : m
+
                         }
                         """
                         filters = client.describe_metric_filters(
@@ -395,11 +397,11 @@ class Auditor(LambdaBase):
                             if find_in_string(patterns, str(p['filterPattern'])):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName':MetricName,
                                     'Namespace':Namespace,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -414,12 +416,12 @@ class Auditor(LambdaBase):
                                 )"""
 
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m='us-east-1'
+
                                 cloud_kwargs={
                                     'TopicArn':TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -456,11 +458,16 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
+                        subscribers = self.connection_manager.call(
+                            service='logs',
+                            command='describe_metric_filters',
+                            kwargs=cloud_kwargs
+                        )
                         """
                         client = connection_manager.client('logs', region_name=m)
                         filters = client.describe_metric_filters(
@@ -487,11 +494,11 @@ class Auditor(LambdaBase):
                             if find_in_string(patterns, str(p['filterPattern'])):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -505,10 +512,10 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='sns',
@@ -549,10 +556,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m='us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs={
                             'logGroupName' : group,
-                            'region_name':m
+
                         }
                         filters=self.connection_manager.call(
                             service='logs',
@@ -574,7 +581,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m='us-east-1'
+
                                 cloud_kwargs={
                                     'MetricName':MetricName,
                                     'Namespace':Namespace
@@ -596,7 +603,7 @@ class Auditor(LambdaBase):
                                     'TopicArn':TopicArn,
                                     'region_name':m
                                 }
-                                response=self.connection_manager.call(
+                                subscribers=self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -634,10 +641,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -658,7 +665,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -675,10 +682,10 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='sns',
@@ -719,10 +726,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -743,7 +750,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -761,12 +768,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -804,10 +811,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -836,7 +843,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -853,12 +860,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -897,10 +904,9 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -923,7 +929,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -941,12 +947,12 @@ class Auditor(LambdaBase):
                                 )"""
 
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
                                     'region_name': m
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -985,10 +991,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1012,7 +1018,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -1029,12 +1035,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -1073,10 +1079,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1100,7 +1106,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -1117,12 +1123,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -1161,10 +1167,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1189,7 +1195,7 @@ class Auditor(LambdaBase):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
 
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace
@@ -1206,12 +1212,12 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
-                                response = self.connection_manager.call(
+                                subscribers = self.connection_manager.call(
                                     service='sns',
                                     command='list_subscriptions_by_topic',
                                     kwargs=cloud_kwargs
@@ -1250,10 +1256,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+                        self.setRegion(region, iam_role=None)
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1278,11 +1284,11 @@ class Auditor(LambdaBase):
                             if find_in_string(patterns, str(p['filterPattern'])):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace,
-                                    'region_name':m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -1299,7 +1305,7 @@ class Auditor(LambdaBase):
                                 m = 'us-east-1'
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='sns',
@@ -1340,10 +1346,10 @@ class Auditor(LambdaBase):
                 try:
                     if o['CloudWatchLogsLogGroupArn']:
                         group = re.search('log-group:(.+?):', o['CloudWatchLogsLogGroupArn']).group(1)
-                        m = 'us-east-1'
+
                         cloud_kwargs = {
                             'logGroupName': group,
-                            'region_name': m
+
                         }
                         filters = self.connection_manager.call(
                             service='logs',
@@ -1372,11 +1378,11 @@ class Auditor(LambdaBase):
                             if find_in_string(patterns, str(p['filterPattern'])):
                                 MetricName = p['metricTransformations'][0]['metricName'],
                                 Namespace = p['metricTransformations'][0]['metricNamespace']
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'MetricName': MetricName,
                                     'Namespace': Namespace,
-                                    'region_name': m
+
                                 }
                                 response = self.connection_manager.call(
                                     service='cloudwatch',
@@ -1390,10 +1396,9 @@ class Auditor(LambdaBase):
                                     Namespace=p['metricTransformations'][0]['metricNamespace']
                                 )"""
                                 TopicArn = response['MetricAlarms'][0]['AlarmActions'][0]
-                                m = 'us-east-1'
+
                                 cloud_kwargs = {
                                     'TopicArn': TopicArn,
-                                    'region_name': m
                                 }
                                 response = self.connection_manager.call(
                                     service='sns',
