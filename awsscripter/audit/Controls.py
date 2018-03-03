@@ -891,10 +891,46 @@ class Control():
     # --- 2 Logging ---
 
     # 2.1 Ensure CloudTrail is enabled in all regions (Scored)
+    def control_2_1_ensure_cloud_trail_all_regions(self, cloudtrails):
+        """Summary
 
+        Args:
+            cloudtrails (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = False
+        failReason = ""
+        offenders = []
+        control = "2.1"
+        description = "Ensure CloudTrail is enabled in all regions"
+        scored = True
+        for m, n in cloudtrails.items():
+            for o in n:
+                if o['IsMultiRegionTrail']:
+                    trail_kwargs = {
+                        'Name': o['TrailARN']
+                    }
+                    # client = boto3.client('cloudtrail', region_name=m)
+                    # response = client.get_trail_status(
+                    #     Name=o['TrailARN']
+                    # )
+                    response = self.connection_manager.call(
+                        service='cloudtrail',
+                        command='get_trail_status',
+                        kwargs=trail_kwargs
+                    )
+                    if response['IsLogging'] is True:
+                        result = True
+                        break
+        if result is False:
+            failReason = "No enabled multi region trails found"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
 
     # 2.2 Ensure CloudTrail log file validation is enabled (Scored)
-    def control_2_2_ensure_cloudtrail_validation(cloudtrails):
+    def control_2_2_ensure_cloudtrail_validation(self,cloudtrails):
         """Summary
 
         Args:
@@ -921,7 +957,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 2.3 Ensure the S3 bucket CloudTrail logs to is not publicly accessible (Scored)
-    def control_2_3_ensure_cloudtrail_bucket_not_public(cloudtrails):
+    def control_2_3_ensure_cloudtrail_bucket_not_public(self,cloudtrails):
         """Summary
 
         Args:
@@ -941,7 +977,15 @@ class Control():
                 #  We only want to check cases where there is a bucket
                 if "S3BucketName" in str(o):
                     try:
-                        response = Audit.S3_CLIENT.get_bucket_acl(Bucket=o['S3BucketName'])
+                        #response = Audit.S3_CLIENT.get_bucket_acl(Bucket=o['S3BucketName'])
+                        s3bucket_kwargs={
+                            'Bucket': o['S3BucketName']
+                        }
+                        response = self.connection_manager.call(
+                            service='iam',
+                            command='get_bucket_acl',
+                            kwargs=s3bucket_kwargs
+                        )
                         for p in response['Grants']:
                             # print("Grantee is " + str(p['Grantee']))
                             if re.search(r'(global/AllUsers|global/AuthenticatedUsers)', str(p['Grantee'])):
@@ -971,7 +1015,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 2.4 Ensure CloudTrail trails are integrated with CloudWatch Logs (Scored)
-    def control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloudtrails):
+    def control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(self,cloudtrails):
         """Summary
 
         Args:
@@ -1003,7 +1047,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 2.5 Ensure AWS Config is enabled in all regions (Scored)
-    def control_2_5_ensure_config_all_regions(regions):
+    def control_2_5_ensure_config_all_regions(self,regions):
         """Summary
 
         Returns:
@@ -1017,8 +1061,14 @@ class Control():
         scored = True
         globalConfigCapture = False  # Only one region needs to capture global events
         for n in regions:
-            configClient = boto3.client('config', region_name=n)
-            response = configClient.describe_configuration_recorder_status()
+            # configClient = boto3.client('config', region_name=n)
+            # response = configClient.describe_configuration_recorder_status()
+            self.setRegion(region=n,iam_role=None)
+            response = self.connection_manager.call(
+                service='config',
+                command='describe_configuration_recorder_status',
+                kwargs=None
+            )
             # Get recording status
             try:
                 if not response['ConfigurationRecordersStatus'][0]['recording'] is True:
@@ -1031,7 +1081,12 @@ class Control():
                 offenders.append(str(n) + ":NotRecording")
 
             # Verify that each region is capturing all events
-            response = configClient.describe_configuration_recorders()
+            #response = configClient.describe_configuration_recorders()
+            response = self.connection_manager.call(
+                service='config',
+                command='describe_configuration_recorders',
+                kwargs=None
+            )
             try:
                 if not response['ConfigurationRecorders'][0]['recordingGroup']['allSupported'] is True:
                     result = False
@@ -1048,7 +1103,12 @@ class Control():
                 pass
 
             # Verify the delivery channels
-            response = configClient.describe_delivery_channel_status()
+            #response = configClient.describe_delivery_channel_status()
+            response = self.connection_manager.call(
+                service='config',
+                command='describe_delivery_channel_status',
+                kwargs=None
+            )
             try:
                 if response['DeliveryChannelsStatus'][0]['configHistoryDeliveryInfo']['lastStatus'] != "SUCCESS":
                     result = False
@@ -1073,7 +1133,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 2.6 Ensure S3 bucket access logging is enabled on the CloudTrail S3 bucket (Scored)
-    def control_2_6_ensure_cloudtrail_bucket_logging(cloudtrails):
+    def control_2_6_ensure_cloudtrail_bucket_logging(self,cloudtrails):
         """Summary
 
         Args:
@@ -1091,8 +1151,16 @@ class Control():
         for m, n in cloudtrails.items():
             for o in n:
                 # it is possible to have a cloudtrail configured with a nonexistant bucket
+                s3_logging_kwargs = {
+                    'Bucket': o['S3BucketName']
+                }
                 try:
-                    response = Audit.S3_CLIENT.get_bucket_logging(Bucket=o['S3BucketName'])
+                    #response = Audit.S3_CLIENT.get_bucket_logging(Bucket=o['S3BucketName'])
+                    response = self.connection_manager.call(
+                        service='s3',
+                        command='get_bucket_logging',
+                        kwargs=s3_logging_kwargs
+                    )
                 except:
                     result = False
                     failReason = "Cloudtrail not configured to log to S3. "
@@ -1108,7 +1176,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 2.7 Ensure CloudTrail logs are encrypted at rest using KMS CMKs (Scored)
-    def control_2_7_ensure_cloudtrail_encryption_kms(cloudtrails):
+    def control_2_7_ensure_cloudtrail_encryption_kms(self,cloudtrails):
         """Summary
 
         Args:
@@ -1136,7 +1204,7 @@ class Control():
                 'Description': description, 'ControlId': control}
 
     # 2.8 Ensure rotation for customer created CMKs is enabled (Scored)
-    def control_2_8_ensure_kms_cmk_rotation(regions):
+    def control_2_8_ensure_kms_cmk_rotation(self,regions):
         """Summary
 
         Returns:
@@ -1149,15 +1217,36 @@ class Control():
         description = "Ensure rotation for customer created CMKs is enabled"
         scored = True
         for n in regions:
-            kms_client = boto3.client('kms', region_name=n)
-            paginator = kms_client.get_paginator('list_keys')
+            #kms_client = boto3.client('kms', region_name=n)
+            #paginator = kms_client.get_paginator('list_keys')
+            kms_kwargs={
+                'operation_name': 'list_keys'
+            }
+            paginator=self.connection_manager.call(
+                service='kms',
+                command='get_paginator',
+                kwargs=kms_kwargs
+            )
             response_iterator = paginator.paginate()
             for page in response_iterator:
                 for n in page['Keys']:
                     try:
-                        rotationStatus = kms_client.get_key_rotation_status(KeyId=n['KeyId'])
+                        #rotationStatus = kms_client.get_key_rotation_status(KeyId=n['KeyId'])
+                        kms_keys_kwargs={
+                            'KeyId': n['KeyId']
+                        }
+                        rotationStatus = self.connection_manager.call(
+                            service='kms',
+                            command='get_key_rotation_status',
+                            kwargs=kms_keys_kwargs
+                        )
                         if rotationStatus['KeyRotationEnabled'] is False:
-                            keyDescription = kms_client.describe_key(KeyId=n['KeyId'])
+                            # keyDescription = kms_client.describe_key(KeyId=n['KeyId'])
+                            keyDescription = self.connection_manager.call(
+                                service='kms',
+                                command='describe_key',
+                                kwargs=kms_keys_kwargs
+                            )
                             if "Default master key that protects my" not in str(
                                     keyDescription['KeyMetadata']['Description']):  # Ignore service keys
                                 result = False

@@ -149,34 +149,41 @@ class Auditor(LambdaBase):
         cloud_trails = reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
-        # control1 = []
-        # control1.append(self.control.control_1_1_root_use(cred_report))
-        # control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        # control1.append(self.control.control_1_3_unused_credentials(cred_report))
-        # control1.append(self.control.control_1_4_rotated_keys(cred_report))
-        # control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
-        # control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
-        # control1.append(self.control.control_1_7_password_policy_symbol(passwordpolicy))
-        # control1.append(self.control.control_1_8_password_policy_number(passwordpolicy))
-        # control1.append(self.control.control_1_9_password_policy_length(passwordpolicy))
-        # control1.append(self.control.control_1_10_password_policy_reuse(passwordpolicy))
-        # control1.append(self.control.control_1_11_password_policy_expire(passwordpolicy))
-        # control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        # control1.append(self.control.control_1_13_root_mfa_enabled())
-        # control1.append(self.control.control_1_14_root_hardware_mfa_enabled())
-        # control1.append(self.control.control_1_15_security_questions_registered())
-        # control1.append(self.control.control_1_16_no_policies_on_iam_users())
-        # control1.append(self.control.control_1_17_detailed_billing_enabled())
-        # control1.append(self.control.control_1_18_ensure_iam_master_and_manager_roles())
-        # control1.append(self.control.control_1_19_maintain_current_contact_details())
-        # control1.append(self.control.control_1_21_ensure_iam_instance_roles_used())
-        # control1.append(self.control.control_1_22_ensure_incident_management_roles())
-        # control1.append(self.control.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
-        # control1.append(self.control.control_1_24_no_overly_permissive_policies())
+        control1 = []
+        control1.append(self.control.control_1_1_root_use(cred_report))
+        control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control.control_1_3_unused_credentials(cred_report))
+        control1.append(self.control.control_1_4_rotated_keys(cred_report))
+        control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
+        control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
+        control1.append(self.control.control_1_7_password_policy_symbol(passwordpolicy))
+        control1.append(self.control.control_1_8_password_policy_number(passwordpolicy))
+        control1.append(self.control.control_1_9_password_policy_length(passwordpolicy))
+        control1.append(self.control.control_1_10_password_policy_reuse(passwordpolicy))
+        control1.append(self.control.control_1_11_password_policy_expire(passwordpolicy))
+        control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control.control_1_13_root_mfa_enabled())
+        control1.append(self.control.control_1_14_root_hardware_mfa_enabled())
+        control1.append(self.control.control_1_15_security_questions_registered())
+        control1.append(self.control.control_1_16_no_policies_on_iam_users())
+        control1.append(self.control.control_1_17_detailed_billing_enabled())
+        control1.append(self.control.control_1_18_ensure_iam_master_and_manager_roles())
+        control1.append(self.control.control_1_19_maintain_current_contact_details())
+        control1.append(self.control.control_1_21_ensure_iam_instance_roles_used())
+        control1.append(self.control.control_1_22_ensure_incident_management_roles())
+        control1.append(self.control.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
+        control1.append(self.control.control_1_24_no_overly_permissive_policies())
 
 
         control2 = []
-        #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+        control2.append(self.control.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+        control2.append(self.control.control_2_2_ensure_cloudtrail_validation(cloud_trails))
+        control2.append(self.control.control_2_3_ensure_cloudtrail_bucket_not_public(cloud_trails))
+        control2.append(self.control.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloud_trails))
+        control2.append(self.control.control_2_5_ensure_config_all_regions(regions))
+        control2.append(self.control.control_2_6_ensure_cloudtrail_bucket_logging(cloud_trails))
+        control2.append(self.control.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
+        control2.append(self.control.control_2_8_ensure_kms_cmk_rotation(regions))
 
         control3 = []
         control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
@@ -196,18 +203,19 @@ class Auditor(LambdaBase):
         control3.append(self.control.control_3_15_verify_sns_subscribers())
 
 
-        #control4 = []
-        # control4.append(self.control.control_4_1_ensure_ssh_not_open_to_world(region_list))
-        # control4.append(self.control_4_2_ensure_rdp_not_open_to_world(region_list))
-        #control4.append(self.control.control_4_3_ensure_flow_logs_enabled_on_all_vpc(region_list))
-        #control4.append(self.control.control_4_4_ensure_default_security_groups_restricts_traffic(region_list))
-        #control4.append(self.control.control_4_5_ensure_route_tables_are_least_access(region_list))
+        control4 = []
+        control4.append(self.control.control_4_1_ensure_ssh_not_open_to_world(region_list))
+        control4.append(self.control.control_4_2_ensure_rdp_not_open_to_world(region_list))
+        control4.append(self.control.control_4_3_ensure_flow_logs_enabled_on_all_vpc(region_list))
+        control4.append(self.control.control_4_4_ensure_default_security_groups_restricts_traffic(region_list))
+        control4.append(self.control.control_4_5_ensure_route_tables_are_least_access(region_list))
         # Join results
         controls = []
-        #controls.append(control1)
-        #controls.append(control2)
-        #controls.append(control4)
+        controls.append(control1)
+        controls.append(control2)
         controls.append(control3)
+        controls.append(control4)
+
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             Auditor.json_output(controls)
