@@ -178,15 +178,15 @@ class Auditor(LambdaBase):
         #control1.append(self.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
         #control1.append(self.control_1_24_no_overly_permissive_policies())
 
-         control2 = []
-         control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
-         control2.append(self.control_2_2_ensure_cloudtrail_validation(cloud_trails))
-         control2.append(self.control_2_3_ensure_cloudtrail_bucket_not_public(cloud_trails))
-         control2.append(self.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloud_trails))
-         control2.append(self.control_2_5_ensure_config_all_regions(regions))
-         control2.append(self.control_2_6_ensure_cloudtrail_bucket_logging(cloud_trails))
-         control2.append(self.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
-         control2.append(self.control_2_8_ensure_kms_cmk_rotation(regions))
+         #control2 = []
+         #control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+         # control2.append(self.control_2_2_ensure_cloudtrail_validation(cloud_trails))
+         # control2.append(self.control_2_3_ensure_cloudtrail_bucket_not_public(cloud_trails))
+         # control2.append(self.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloud_trails))
+         # control2.append(self.control_2_5_ensure_config_all_regions(regions))
+         # control2.append(self.control_2_6_ensure_cloudtrail_bucket_logging(cloud_trails))
+         # control2.append(self.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
+         # control2.append(self.control_2_8_ensure_kms_cmk_rotation(regions))
 
         #control3 = []
         #control3.append(self.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
@@ -215,7 +215,7 @@ class Auditor(LambdaBase):
         #Join results
          controls = []
         #controls.append(control1)
-         controls.append(control2)
+         #controls.append(control2)
         #controls.append(control3)
         #controls.append(control4)
         #Build JSON structure for console output if enabled
