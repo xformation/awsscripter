@@ -15,5 +15,5 @@ def audit_cisp_command(ctx, level):
     logger = logging.getLogger(__name__)
     logger.info("Auditing with level  " + level)
     auditor = Auditor("myname", "myproject", "us-east-1")
-    auditor.handle("test", "test")
+    auditor.ha("test", "test")
 
