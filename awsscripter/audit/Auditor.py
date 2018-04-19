@@ -20,6 +20,7 @@ from awsscripter.common.connection_manager import ConnectionManager
 from awsscripter.hooks import add_audit_hooks
 
 
+
 class Auditor(LambdaBase):
     # --- Script controls ---
     # CIS Benchmark version referenced. Only used in web report.
@@ -139,7 +140,18 @@ class Auditor(LambdaBase):
         # Comment out unwanted controls
         control1 = []
         control1.append(self.control_1_1_root_use(cred_report))
+        control1.append(self.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control_1_3_unused_credentials(cred_report))
+        control1.append(self.control_1_4_rotated_keys(cred_report))
         control1.append(self.control_1_5_password_policy_uppercase(password_policy))
+        control1.append(self.control_1_6_password_policy_lowercase(password_policy))
+        control1.append(self.control_1_7_password_policy_symbol(password_policy))
+        control1.append(self.control_1_8_password_policy_number(password_policy))
+        control1.append(self.control_1_9_password_policy_length(password_policy))
+        control1.append(self.control_1_10_password_policy_reuse(password_policy))
+        control1.append(self.control_1_11_password_policy_expire(password_policy))
+        control1.append(self.control_1_12_root_key_exists(cred_report))
+        control1.append(self.control_1_13_root_mfa_enabled())
         #defining control 2
         control2 = []
         control2.append(self.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
@@ -213,6 +225,153 @@ class Auditor(LambdaBase):
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
+    # 1.2 Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password (Scored)
+    def control_1_2_mfa_on_password_enabled_iam(self, credreport):
+        """Summary
+        Args:
+            credreport (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.2"
+        description = "Ensure multi-factor authentication (MFA) is enabled for all IAM users that have a console password"
+        scored = True
+        for i in range(len(credreport)):
+            # Verify if the user have a password configured
+            if credreport[i]['password_enabled'] == "true":
+                # Verify if password users have MFA assigned
+                if credreport[i]['mfa_active'] == "false":
+                    result = False
+                    failReason = "No MFA on users with password. "
+                    offenders.append(str(credreport[i]['arn']))
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 1.3 Ensure credentials unused for 90 days or greater are disabled (Scored)
+    def control_1_3_unused_credentials(slef, credreport):
+        """Summary
+        Args:
+            credreport (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.3"
+        description = "Ensure credentials unused for 90 days or greater are disabled"
+        scored = True
+        # Get current time
+        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['password_enabled'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['password_last_used'], frm)
+                    # Verify password have been used in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Credentials unused > 90 days detected. "
+                        offenders.append(str(credreport[i]['arn']) + ":password")
+                except:
+                    pass  # Never used
+            if credreport[i]['access_key_1_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(
+                        credreport[i]['access_key_1_last_used_date'], frm)
+                    # Verify password have been used in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Credentials unused > 90 days detected. "
+                        offenders.append(str(credreport[i]['arn']) + ":key1")
+                except:
+                    pass
+            if credreport[i]['access_key_2_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(
+                        credreport[i]['access_key_2_last_used_date'], frm)
+                    # Verify password have been used in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Credentials unused > 90 days detected. "
+                        offenders.append(str(credreport[i]['arn']) + ":key2")
+                except:
+                    # Never used
+                    pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 1.4 Ensure access keys are rotated every 90 days or less (Scored)
+    def control_1_4_rotated_keys(self, credreport):
+        """Summary
+        Args:
+            credreport (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.4"
+        description = "Ensure access keys are rotated every 90 days or less"
+        scored = True
+        # Get current time
+        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['access_key_1_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['access_key_1_last_rotated'],
+                                                                            frm)
+                    # Verify keys have rotated in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unrotated key1")
+                except:
+                    pass
+                try:
+                    last_used_datetime = datetime.strptime(credreport[i]['access_key_1_last_used_date'], frm)
+                    last_rotated_datetime = datetime.strptime(credreport[i]['access_key_1_last_rotated'], frm)
+                    # Verify keys have been used since rotation.
+                    if last_used_datetime < last_rotated_datetime:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unused key1")
+                except:
+                    pass
+            if credreport[i]['access_key_2_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['access_key_2_last_rotated'],
+                                                                            frm)
+                    # Verify keys have rotated in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unrotated key2")
+                except:
+                    pass
+                try:
+                    last_used_datetime = datetime.strptime(credreport[i]['access_key_2_last_used_date'], frm)
+                    last_rotated_datetime = datetime.strptime(credreport[i]['access_key_2_last_rotated'], frm)
+                    # Verify keys have been used since rotation.
+                    if last_used_datetime < last_rotated_datetime:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unused key2")
+                except:
+                    pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 1.5 Ensure IAM password policy requires at least one uppercase letter (Scored)
     def control_1_5_password_policy_uppercase(self, passwordpolicy):
         """Summary
 
@@ -237,6 +396,178 @@ class Auditor(LambdaBase):
                 failReason = "Password policy does not require at least one uppercase letter"
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    # 1.6 Ensure IAM password policy requires at least one lowercase letter (Scored)
+    def control_1_6_password_policy_lowercase(self, passwordpolicy):
+        """Summary
+        Args:
+            passwordpolicy (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.6"
+        description = "Ensure IAM password policy requires at least one lowercase letter"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            if passwordpolicy['RequireLowercaseCharacters'] is False:
+                result = False
+                failReason = "Password policy does not require at least one uppercase letter"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 1.7 Ensure IAM password policy requires at least one symbol (Scored)
+    def control_1_7_password_policy_symbol(self, passwordpolicy):
+        """Summary
+        Args:
+            passwordpolicy (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.7"
+        description = "Ensure IAM password policy requires at least one symbol"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            if passwordpolicy['RequireSymbols'] is False:
+                result = False
+                failReason = "Password policy does not require at least one symbol"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 1.8 Ensure IAM password policy requires at least one number (Scored)
+    def control_1_8_password_policy_number(self, passwordpolicy):
+        """Summary
+        Args:
+            passwordpolicy (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.8"
+        description = "Ensure IAM password policy requires at least one number"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            if passwordpolicy['RequireNumbers'] is False:
+                result = False
+                failReason = "Password policy does not require at least one number"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_1_9_password_policy_length(self, passwordpolicy):
+        """Summary
+        Args:
+            passwordpolicy (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.9"
+        description = "Ensure IAM password policy requires minimum length of 14 or greater"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            if passwordpolicy['MinimumPasswordLength'] < 14:
+                result = False
+                failReason = "Password policy does not require at least 14 characters"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_1_10_password_policy_reuse(self, passwordpolicy):
+        """Summary
+        Args:
+            passwordpolicy (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.10"
+        description = "Ensure IAM password policy prevents password reuse"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            try:
+                if passwordpolicy['PasswordReusePrevention'] == 24:
+                    pass
+                else:
+                    result = False
+                    failReason = "Password policy does not prevent reusing last 24 passwords"
+            except:
+                result = False
+                failReason = "Password policy does not prevent reusing last 24 passwords"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_1_11_password_policy_expire(self, passwordpolicy):
+        """Summary
+        Args:
+            passwordpolicy (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.11"
+        description = "Ensure IAM password policy expires passwords within 90 days or less"
+        scored = True
+        if passwordpolicy is False:
+            result = False
+            failReason = "Account does not have a IAM password policy."
+        else:
+            if passwordpolicy['ExpirePasswords'] is True:
+                if 0 < passwordpolicy['MaxPasswordAge'] > 90:
+                    result = False
+                    failReason = "Password policy does not expire passwords after 90 days or less"
+            else:
+                result = False
+                failReason = "Password policy does not expire passwords after 90 days or less"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_1_12_root_key_exists(self, credreport):
+        """Summary
+        Args:
+            credreport (TYPE): Description
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "1.12"
+        description = "Ensure no root account access key exists"
+        scored = True
+        if (credreport[0]['access_key_1_active'] == "true") or (credreport[0]['access_key_2_active'] == "true"):
+            result = False
+            failReason = "Root have active access keys"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+
 
     def control_2_1_ensure_cloud_trail_all_regions(self, cloudtrails):
         """Summary
@@ -341,6 +672,44 @@ class Auditor(LambdaBase):
             Message=json.dumps({'default': url}),
             MessageStructure='json'
         )
+
+
+
+    def DP_4_2_s3_bucket_public_read_prohibited(self):
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.2"
+        description = "No Public read access for S3 Buckets"
+        scored = False
+        offenders = []
+        s3_client = boto3.client('s3')
+        buckets = s3_client.list_buckets()
+        public_access = False
+        for bucket in buckets['Buckets']:
+            print(bucket)
+
+        #       acl_bucket = s3_client.get_bucket_acl(Bucket=bucket['Name'])
+        #       print(yaml.dump(acl_bucket))
+        #       for grantee in acl_bucket['Grants']:
+        #           print(grantee)
+        #           if len(grantee['Grantee']) > 0:
+        #                 print(grantee['Grantee'])
+        #                 for uri in (grantee['Grantee'].keys()):
+        #                     if uri == 'URI':
+        #                         if grantee['Grantee']['URI'] == 'http://acs.amazonaws.com/groups/global/AllUsers':
+        #                             public_access = True
+        #                             print(public_access)
+        #     if public_access == True:
+        #         offenders.append(bucket['Name'])
+        #         public_access = False
+        #
+        #
+        # if len(offenders) > 0:
+        #     result = False
+        #     failReason = "There S3 Buckets available with Public Read Access"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
 
 
 auditor = Auditor("myname","myporject","us-east-1")
