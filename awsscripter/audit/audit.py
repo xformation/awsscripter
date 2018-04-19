@@ -19,6 +19,7 @@ import getopt
 import os
 from datetime import datetime
 import boto3
+from awsscripter.audit.audit import Audit
 
 from awsscripter.common.connection_manager import ConnectionManager
 from awsscripter.common.helpers import get_external_stack_name
@@ -2514,3 +2515,5 @@ class Audit(object):
                 else:
                     boto3.setup_default_session(profile_name=profile_name, region_name='us-east-1')
         lambda_handler("test", "test")
+auditor = Audit("myname", "myproject", "us-east-1")
+auditor.handle("test","test")
