@@ -525,3 +525,110 @@ class Control():
                         failReason = "The yearly rotation is not activated for this key."
                 return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                             'Description': description, 'ControlId': control}
+            
+    # | 4.2 | s3_bucket_public_read_prohibited
+    def DP_4_2_s3_bucket_public_read_prohibited(self):
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.2"
+        description = "No Public read access for S3 Buckets"
+        scored = False
+        offenders = []
+        s3_client = boto3.client('s3')
+        buckets = s3_client.list_buckets()
+        public_access = False
+        for bucket in buckets['Buckets']:
+            # print(bucket)
+            acl_bucket = s3_client.get_bucket_acl(Bucket=bucket['Name'])
+            # print(yaml.dump(acl_bucket))
+            for grantee in acl_bucket['Grants']:
+                # print(grantee['Grantee'])
+                # print(grantee['Permission'])
+                if (grantee['Permission']) == 'READ':
+                    # print(grantee['Grantee'])
+                    for uri in (grantee['Grantee'].keys()):
+                        if uri == 'URI':
+                            if ((grantee['Grantee']['URI'] == 'http://acs.amazonaws.com/groups/global/AllUsers')):# && (grantee['Permission'] == 'Read')):# and grantee['Grantee']['Permission'] == 'FULL_CONTROL':
+                                public_access = True
+                                print(public_access)
+            if public_access == True:
+                offenders.append(bucket['Name'])
+                public_access = False
+        if len(offenders) > 0:
+            result = False
+            failReason = "There S3 Buckets available with Public Read Access"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # | 4.3 | s3_bucket_public_write_prohibited
+    def DP_4_3_s3_bucket_public_write_prohibited(self):
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.3"
+        description = "No Public write access for S3 Buckets"
+        scored = False
+        offenders = []
+        s3_client = boto3.client('s3')
+        buckets = s3_client.list_buckets()
+        public_access = False
+        for bucket in buckets['Buckets']:
+            # print(bucket)
+            acl_bucket = s3_client.get_bucket_acl(Bucket=bucket['Name'])
+            # print(yaml.dump(acl_bucket))
+            for grantee in acl_bucket['Grants']:
+                # print(grantee['Grantee'])
+                # print(grantee['Permission'])
+                if (grantee['Permission']) == 'WRITE':
+                    # print(grantee['Grantee'])
+                    for uri in (grantee['Grantee'].keys()):
+                        if uri == 'URI':
+                            if ((grantee['Grantee']['URI'] == 'http://acs.amazonaws.com/groups/global/AllUsers')):# && (grantee['Permission'] == 'Read')):# and grantee['Grantee']['Permission'] == 'FULL_CONTROL':
+                                public_access = True
+                                print(public_access)
+            if public_access == True:
+                offenders.append(bucket['Name'])
+                public_access = False
+        if len(offenders) > 0:
+            result = False
+            failReason = "There S3 Buckets available with Public Write Access"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def DP_4_4_s3_bucket_ssl_requests_only(self):
+        result = True
+        failReason = ""
+        offenders = []
+        control = "4.4"
+        description = "S3 bucket SSL requests only"
+        scored = False
+        offenders = []
+        s3_client = boto3.client('s3')
+        buckets = s3_client.list_buckets()
+        public_access = False
+        for bucket in buckets['Buckets']:
+            try:
+                bucket_policy = s3_client.get_bucket_policy(Bucket=bucket['Name'])
+                if bucket_policy:
+                    bucket_policy_str = bucket_policy['Policy']
+                    bucket_policy_dic = bucket_policy_str.replace("'", "\"")
+                    d = json.loads(bucket_policy_dic)
+                    for statement in d['Statement']:
+                        for key in (statement.keys()):
+                            if key == "Condition" and statement['Effect'] == "Allow":
+                                if statement['Condition']['Bool']['aws:SecureTransport'] == "true":
+                                    continue
+                            if key == "Condition" and statement['Effect'] == "Deny":
+                                if statement['Condition']['Bool']['aws:SecureTransport'] == "false":
+                                    # print("good bucket")
+                                    continue
+                                # print(statement['Condition'])
+            except Exception:
+                # print("Bucket " + bucket['Name'] + "has no policy")
+                offenders.append(bucket['Name'])
+        if len(offenders) > 0:
+            result = False
+            failReason = "There S3 Buckets available without SSL enforcement Policy"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
