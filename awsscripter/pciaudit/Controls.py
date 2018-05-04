@@ -444,6 +444,43 @@ class Control():
             return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                     'Description': description, 'ControlId': control}
 
+    def IS_3_1_vpc_securitygroup_default_blocked(self):
+        result = True
+        failReason = ""
+        control = "3.1"
+        description = "vpc securitygroup"
+        scored = False
+        offenders = []
+        regions = boto3.client("ec2").describe_regions()['Regions']
+        for region in regions:
+            # region_session = get_sts_session(event, rule_parameters["RoleToAssume"], region['RegionName'])
+            ec2 = boto3.client("ec2")
+            security_groups = ec2.describe_security_groups()
+            print(security_groups)
+            for sg in security_groups[
+                'SecurityGroups']:  # parsing all because filtering by GroupName returns a ClientError when there are no VPCs in the region
+                # print("sg is " + json.dumps(sg))
+                if 'VpcId' in sg and sg['GroupName'] == "default":
+                    eval = {}
+                    eval["ComplianceResourceType"] = "AWS::EC2::SecurityGroup"
+                    print(eval)
+                    eval['configuration'] = sg
+                    print(eval)
+                    eval["ComplianceResourceId"] = "arn:aws:ec2:" + region['RegionName'] + ":" + event['configRuleArn'].split(":")[4] + ":security_group/" + sg['GroupId']
+                    # there is no configrulearn passed in event
+                    # print(eval)
+                    if len(eval['configuration']['IpPermissions']):
+                        result = "NON_COMPLIANT",
+                        failReason = "There are permissions on the igress of this security group."
+                    elif len(eval['configuration']['IpPermissionsEgress']):
+                        result = "NON_COMPLIANT"
+                        failReason = "There are permissions on the egress of this security group."
+                else:
+                    result = True
+                    failReason = "This security group has no permission."
+                return {'Result': result, 'failReason': failReason, 'Offenders': offenders,
+                                'ScoredControl': scored,
+                                'Description': description, 'ControlId': control}
     # 3.2 | vpc_no_route_to_igw
     def IS_3_2_vpc_main_route_table_no_igw(self):
         result = True
@@ -468,8 +505,6 @@ class Control():
 
             if igw_route == False:
                 result = True
-                failReason = "No IGW route is present in the Main route table of this VPC."
-
             else:
                 result = False
                 failReason = "An IGW route is present in the Main route table of this VPC (RouteTableId: " +route_table['RouteTableId'] + ")."

@@ -259,6 +259,7 @@ class PciAuditor(LambdaBase):
         # control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
 
         control3 = []
+        control3.append(self.control.IS_3_1_vpc_securitygroup_default_blocked())
         control3.append(self.control.IS_3_2_vpc_main_route_table_no_igw())
         # control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
         # control3.append(self.control.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloud_trails))
