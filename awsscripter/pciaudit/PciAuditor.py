@@ -290,7 +290,7 @@ class PciAuditor(LambdaBase):
         # Join results
         controls = []
         controls.append(control1)
-        # controls.append(control2)
+        controls.append(control2)
         controls.append(control3)
         controls.append(control4)
 
