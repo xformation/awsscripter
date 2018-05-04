@@ -236,10 +236,10 @@ class PciAuditor(LambdaBase):
     def handle(self, event, context):
         # implementation
         self.logger.info("%s - Auditing Account", self.name)
-        # cred_reporter = CredReport("us-east-1")
-        # cred_report = cred_reporter.get_cred_report()
-        # passpol = PasswordPolicy()
-        # passwordpolicy = passpol.get_account_password_policy()
+        cred_reporter = CredReport("us-east-1")
+        cred_report = cred_reporter.get_cred_report()
+        passpol = PasswordPolicy()
+        passwordpolicy = passpol.get_account_password_policy()
         # reglist = CloudTrail()
         # regions = reglist.get_regions()
         #print(regions)
@@ -247,24 +247,16 @@ class PciAuditor(LambdaBase):
         # cloud_trails = reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
-        # control1 = []
-        # control1.append(self.control.control_1_1_root_use(cred_report))
-        # control1.append(self.control.control_1_2_root_mfa_enabled())
-        # control1.append(self.control.control_1_3_no_active_root_accesskey_used(cred_report))
+        control1 = []
+        control1.append(self.control.control_1_1_root_use(cred_report))
+        control1.append(self.control.control_1_2_root_mfa_enabled())
+        control1.append(self.control.control_1_3_no_active_root_accesskey_used(cred_report))
         # control1.append(self.control.control_1_4_iam_policy_no_full_star())
 
-        # control2 = []
-        # control2.append(self.control.LM_2_1_cloudtrail_centralized_encrypted_lfi())
+        control2 = []
+        control2.append(self.control.LM_2_1_cloudtrail_centralized_encrypted_lfi())
+        control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
         # control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
-        # control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
-        # control2.append(self.control.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
-        # control2.append(self.control.control_2_2_ensure_cloudtrail_validation(cloud_trails))
-        # control2.append(self.control.control_2_3_ensure_cloudtrail_bucket_not_public(cloud_trails))
-        # control2.append(self.control.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloud_trails))
-        # control2.append(self.control.control_2_5_ensure_config_all_regions(regions))
-        # control2.append(self.control.control_2_6_ensure_cloudtrail_bucket_logging(cloud_trails))
-        # control2.append(self.control.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
-        # control2.append(self.control.control_2_8_ensure_kms_cmk_rotation(regions))
 
         control3 = []
         control3.append(self.control.IS_3_2_vpc_main_route_table_no_igw())
@@ -286,9 +278,9 @@ class PciAuditor(LambdaBase):
 
 
         control4 = []
-        # control4.append(self.control.DP_4_1_kms_cmk_rotation_activated())
-        # control4.append(self.control.DP_4_2_s3_bucket_public_read_prohibited())
-        # control4.append(self.control.DP_4_3_s3_bucket_public_write_prohibited())
+        control4.append(self.control.DP_4_1_kms_cmk_rotation_activated())
+        control4.append(self.control.DP_4_2_s3_bucket_public_read_prohibited())
+        control4.append(self.control.DP_4_3_s3_bucket_public_write_prohibited())
         control4.append(self.control.DP_4_4_s3_bucket_ssl_requests_only())
         # control4.append(self.control.control_4_1_ensure_ssh_not_open_to_world(region_list))
         # control4.append(self.control.control_4_2_ensure_rdp_not_open_to_world(region_list))
@@ -297,7 +289,7 @@ class PciAuditor(LambdaBase):
         # control4.append(self.control.control_4_5_ensure_route_tables_are_least_access(region_list))
         # Join results
         controls = []
-        # controls.append(control1)
+        controls.append(control1)
         # controls.append(control2)
         controls.append(control3)
         controls.append(control4)

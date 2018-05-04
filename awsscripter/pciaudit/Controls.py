@@ -219,9 +219,9 @@ class Control():
             else:
                 policy_version = iam.get_policy_version(PolicyArn=configuration_item["Arn"],
                                                         VersionId=policy_info['Policy']['DefaultVersionId'])
-                print("policy version +++++++++++++",policy_version)
+                # print("policy version +++++++++++++",policy_version)
                 for statement in policy_version['PolicyVersion']['Document']['Statement']:
-                    print(statement)
+                    # print(statement)
                     star_statement = False
                     if type(statement['Action']) is list:
                         for action in statement['Action']:
@@ -247,19 +247,6 @@ class Control():
 
             ResourceId = configuration_item["PolicyId"]
             ResourceType = "AWS::IAM::Policy"
-            # config = boto3.client("config")
-            # config.put_evaluations(
-            #     Evaluations=[
-            #         {
-            #             "ComplianceResourceType": ResourceType,
-            #             "ComplianceResourceId": ResourceId,
-            #             "ComplianceType": status,
-            #             "Annotation": "No full * (aka full permission) in an IAM Policy should be attached to IAM Users/Groups/Roles.",
-            #             "OrderingTimestamp": str(datetime.now())
-            #         },
-            #     ],
-            #     ResultToken=result_token
-            # )
 
         # Verify the AWS managed policy named AdminstratorAccess
         admin_response = iam.get_policy(PolicyArn="arn:aws:iam::aws:policy/AdministratorAccess")
@@ -325,7 +312,7 @@ class Control():
         # AWS_CLOUDTRAIL_NAME = 'Security_Trail_DO-NOT-MODIFY'
         eval = {}
         eval["Configuration"] = cloudtrail_client.describe_trails()['trailList']
-        print(eval)
+        # print(eval)
         #No Trail is configured -> NOT COMPLIANT
         if len(eval['Configuration']) == 0:
             result = False
@@ -337,9 +324,9 @@ class Control():
             correct_trail=cloudtrail_client.describe_trails(trailNameList=[AWS_CLOUDTRAIL_NAME])['trailList'][0]
             correct_trail_selector = \
             cloudtrail_client.get_event_selectors(TrailName=AWS_CLOUDTRAIL_NAME)['EventSelectors'][0]
-            print("print Correct_trail")
-            print(correct_trail_status)
-            print((correct_trail_selector))
+            # print("print Correct_trail")
+            # print(correct_trail_status)
+            # print((correct_trail_selector))
             AWS_CLOUDTRAIL_S3_BUCKET_NAME = correct_trail['S3BucketName']
             # The Trail named AWS_CLOUDTRAIL_NAME value is inactive -> NOT COMPLIANT
             if correct_trail_status['IsLogging'] != True:
@@ -361,7 +348,7 @@ class Control():
                 failReason = "The Trail named " + AWS_CLOUDTRAIL_NAME + " do not log ALL Management events."
             elif True:#len(correct_trail_selector['DataResources']) != 0:
                 if len(correct_trail_selector['DataResources']) == 0:
-                    print("DataResources are empty")
+                    # print("DataResources are empty")
                     result=False
                     failReason="The Trail named " + AWS_CLOUDTRAIL_NAME + " do not log any Data Events."
                 else:
@@ -411,7 +398,7 @@ class Control():
         scored = False
         offenders = []
         regions = boto3.client("ec2").describe_regions()['Regions']
-        print(regions)
+        # print(regions)
         for region in regions:
             eval = {}
             # region_session = get_sts_session(event, rule_parameters["RoleToAssume"], region['RegionName'])
@@ -422,9 +409,9 @@ class Control():
             eval = events_client.list_rules()
             # eval = {'Rules': [{ "Type": "AWS::S3::Object", "Values": ["arn:aws:s3:::mybucket/prefix", "arn:aws:s3:::mybucket2/prefix2"] }], 'ResponseMetadata': {'RequestId': 'ae4e863e-389e-11e8-b8a0-a37af6e52e05', 'HTTPStatusCode': 200, 'HTTPHeaders': {'x-amzn-requestid': 'ae4e863e-389e-11e8-b8a0-a37af6e52e05', 'content-type': 'application/x-amz-json-1.1', 'content-length': '12', 'date': 'Thu, 05 Apr 2018 06:58:01 GMT'}, 'RetryAttempts': 0}}
             #AMAZON_CLOUDWATCH_EVENT_RULE_NAME = eval['Name']
-            print("Marking eval")
-            print(eval)
-            print(eval['Rules'])
+            # print("Marking eval")
+            # print(eval)
+            # print(eval['Rules'])
             if len(eval['Rules']) == 0:
                 result = False
                 failReason = "No Event Rule is configured in that region."
@@ -470,7 +457,6 @@ class Control():
 
         route_tables = ec2_client.describe_route_tables(Filters=[{"Name": "association.main", "Values": ["true"]}])[
             'RouteTables']
-        # print(route_tables)
         for route_table in route_tables:
             eval = {}
             eval["ComplianceResourceId"] = route_table['VpcId']
@@ -507,7 +493,6 @@ class Control():
             # region_session = get_sts_session(event, rule_parameters["RoleToAssume"], region['RegionName'])
             kms_client = boto3.client('kms')
             keys = kms_client.list_keys()
-            # print(keys)
             if len(keys['Keys']) == 0:
                 continue
             else:
@@ -525,7 +510,7 @@ class Control():
                         failReason = "The yearly rotation is not activated for this key."
                 return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                             'Description': description, 'ControlId': control}
-            
+
     # | 4.2 | s3_bucket_public_read_prohibited
     def DP_4_2_s3_bucket_public_read_prohibited(self):
         result = True
@@ -539,19 +524,13 @@ class Control():
         buckets = s3_client.list_buckets()
         public_access = False
         for bucket in buckets['Buckets']:
-            # print(bucket)
             acl_bucket = s3_client.get_bucket_acl(Bucket=bucket['Name'])
-            # print(yaml.dump(acl_bucket))
             for grantee in acl_bucket['Grants']:
-                # print(grantee['Grantee'])
-                # print(grantee['Permission'])
                 if (grantee['Permission']) == 'READ':
-                    # print(grantee['Grantee'])
                     for uri in (grantee['Grantee'].keys()):
                         if uri == 'URI':
                             if ((grantee['Grantee']['URI'] == 'http://acs.amazonaws.com/groups/global/AllUsers')):# && (grantee['Permission'] == 'Read')):# and grantee['Grantee']['Permission'] == 'FULL_CONTROL':
                                 public_access = True
-                                print(public_access)
             if public_access == True:
                 offenders.append(bucket['Name'])
                 public_access = False
@@ -574,19 +553,13 @@ class Control():
         buckets = s3_client.list_buckets()
         public_access = False
         for bucket in buckets['Buckets']:
-            # print(bucket)
             acl_bucket = s3_client.get_bucket_acl(Bucket=bucket['Name'])
-            # print(yaml.dump(acl_bucket))
             for grantee in acl_bucket['Grants']:
-                # print(grantee['Grantee'])
-                # print(grantee['Permission'])
                 if (grantee['Permission']) == 'WRITE':
-                    # print(grantee['Grantee'])
                     for uri in (grantee['Grantee'].keys()):
                         if uri == 'URI':
                             if ((grantee['Grantee']['URI'] == 'http://acs.amazonaws.com/groups/global/AllUsers')):# && (grantee['Permission'] == 'Read')):# and grantee['Grantee']['Permission'] == 'FULL_CONTROL':
                                 public_access = True
-                                print(public_access)
             if public_access == True:
                 offenders.append(bucket['Name'])
                 public_access = False
