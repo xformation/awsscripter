@@ -16,4 +16,3 @@ def audit_pcidss_command(ctx, level):
     logger.info("Auditing with level  " + level)
     auditor = PciAuditor("myname", "myproject", "us-east-1")
     auditor.handle("test", "test")
-

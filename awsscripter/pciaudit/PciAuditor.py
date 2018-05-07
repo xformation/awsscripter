@@ -129,6 +129,7 @@ from awsscripter.resolvers import ResolvableProperty
 class PciAuditor(LambdaBase):
     # --- Script controls ---
 
+
     # CIS Benchmark version referenced. Only used in web report.
     AWS_CIS_BENCHMARK_VERSION = "1.1"
 
@@ -371,10 +372,6 @@ class PciAuditor(LambdaBase):
             Message=json.dumps({'default': url}),
             MessageStructure='json'
         )
-
-
-
-
 # input values for args and/or kwargs
-auditor = PciAuditor("myname", "myproject", "us-east-1")
-auditor.handle("test","test")
+# auditor = PciAuditor("myname", "myproject", "us-east-1")
+# auditor.handle("test","test")
