@@ -154,6 +154,7 @@ class Control():
                 print("Something went wrong")
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
     def control_1_2_root_mfa_enabled(self):
 
         """Summary
@@ -210,7 +211,7 @@ class Control():
         offenders = []
 
         iam = boto3.client("iam")
-        response = iam.list_policies(Scope='Local')
+        response = iam.list_policies(Scope='Local',OnlyAttached=True)
 
         for configuration_item in response["Policies"]:
             policy_info = iam.get_policy(PolicyArn=configuration_item["Arn"])
@@ -220,6 +221,7 @@ class Control():
                 policy_version = iam.get_policy_version(PolicyArn=configuration_item["Arn"],
                                                         VersionId=policy_info['Policy']['DefaultVersionId'])
                 # print("policy version +++++++++++++",policy_version)
+                # print(policy_version)
                 for statement in policy_version['PolicyVersion']['Document']['Statement']:
                     # print(statement)
                     star_statement = False

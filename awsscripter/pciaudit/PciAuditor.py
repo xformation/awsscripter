@@ -251,12 +251,12 @@ class PciAuditor(LambdaBase):
         control1.append(self.control.control_1_1_root_use(cred_report))
         control1.append(self.control.control_1_2_root_mfa_enabled())
         control1.append(self.control.control_1_3_no_active_root_accesskey_used(cred_report))
-        # control1.append(self.control.control_1_4_iam_policy_no_full_star())
+        control1.append(self.control.control_1_4_iam_policy_no_full_star())
 
         control2 = []
         control2.append(self.control.LM_2_1_cloudtrail_centralized_encrypted_lfi())
         control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
-        # control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
+        control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
 
         control3 = []
         control3.append(self.control.IS_3_1_vpc_securitygroup_default_blocked())
@@ -376,5 +376,5 @@ class PciAuditor(LambdaBase):
 
 
 # input values for args and/or kwargs
-auditor = PciAuditor("myname", "myproject", "us-east-1")
-auditor.handle("test","test")
+# auditor = PciAuditor("myname", "myproject", "us-east-1")
+# auditor.handle("test","test")
