@@ -211,6 +211,10 @@ class PciAuditor(LambdaBase):
                 notifications=self.notifications, on_failure=self.on_failure
             )
         )
+
+    def __call__(self):
+        return
+
     def _format_parameters(self, parameters):
         """
         Converts CloudFormation parameters to the format used by Boto3.

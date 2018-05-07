@@ -1,6 +1,6 @@
 import click
 from awsscripter.stack.helpers import catch_exceptions, confirmation
-from awsscripter.pciaudit import PciAuditor
+from awsscripter.pciaudit.PciAuditor import PciAuditor
 import logging
 @click.command(name="PCIDSS")
 @click.option(
