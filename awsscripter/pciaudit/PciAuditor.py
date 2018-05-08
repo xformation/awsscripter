@@ -212,9 +212,6 @@ class PciAuditor(LambdaBase):
             )
         )
 
-    def __call__(self):
-        return
-
     def _format_parameters(self, parameters):
         """
         Converts CloudFormation parameters to the format used by Boto3.
