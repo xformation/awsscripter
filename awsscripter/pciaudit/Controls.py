@@ -422,8 +422,8 @@ class Control():
                     AMAZON_CLOUDWATCH_EVENT_RULE_NAME = rule['Name']
                     correct_rule =  events_client.describe_rule(Name=AMAZON_CLOUDWATCH_EVENT_RULE_NAME)
                     AMAZON_CLOUDWATCH_EVENT_BUS_ACCOUNT_ID = correct_rule['Arn'].split(":")[4]
-                    print(correct_rule)
-                    print(AMAZON_CLOUDWATCH_EVENT_RULE_NAME)
+                    # print(correct_rule)
+                    # print(AMAZON_CLOUDWATCH_EVENT_RULE_NAME)
                     if correct_rule['State'] != 'ENABLED':
                         result = False
                         failReason = "The Event Rule name 4d " + AMAZON_CLOUDWATCH_EVENT_RULE_NAME + " is not enabled in that region."
@@ -458,16 +458,16 @@ class Control():
             # region_session = get_sts_session(event, rule_parameters["RoleToAssume"], region['RegionName'])
             ec2 = boto3.client("ec2")
             security_groups = ec2.describe_security_groups()
-            print(security_groups)
+            # print(security_groups)
             for sg in security_groups[
                 'SecurityGroups']:  # parsing all because filtering by GroupName returns a ClientError when there are no VPCs in the region
                 # print("sg is " + json.dumps(sg))
                 if 'VpcId' in sg and sg['GroupName'] == "default":
                     eval = {}
                     eval["ComplianceResourceType"] = "AWS::EC2::SecurityGroup"
-                    print(eval)
+                    # print(eval)
                     eval['configuration'] = sg
-                    print(eval)
+                    # print(eval)
                     eval["ComplianceResourceId"] = "arn:aws:ec2:" + region['RegionName'] + ":" + event['configRuleArn'].split(":")[4] + ":security_group/" + sg['GroupId']
                     # there is no configrulearn passed in event
                     # print(eval)
