@@ -5,10 +5,10 @@ awsscripter
 About
 -----
 
-awsscripter is a tool to write some automation on the top of  AWS CLI (Boto).It automates away some of the more mundane, repetitive and error-prone tasks, simplify aws resource management more efficiently.
+awsscripter is a tool to write automation on the top of  AWS CLI (Boto).It automates away some of the more mundane, repetitive and error-prone tasks, simplify aws resource management more efficiently.
 
 Features:
-
+- Audit AWS accounts with different compliance program such as CISP, PCI-DSS, HIPPA
 - Takes inputs from templates & Configuration and performs user friendly automations by combining aws boto api's
 - Support for inserting dynamic values in templates via customisable resolvers
 - Support for running arbitrary code as hooks before/after stack builds
@@ -18,78 +18,20 @@ Features:
 - Built in support for working with ALM (application lifecycle Management tools and Operation Support System
 - Infrastructure visibility with meta-operations such as stack querying protection
 
-
 Example
 -------
-awsscripter create-group groupname=mygroup serviceaccess=EC2:ECS:EMR accesslevel=minimal accessregion=default
-awsscripter audit-security rules=CIS
-awsscripter audit-security rules=full
-awsscripter
-  $ tree
-  .
-  ├── config
-  │   └── dev
-  │       ├── config.yaml
-  │       ├── subnets.yaml
-  │       └── vpc.yaml
-  └── templates
-      ├── subnets.py
-      └── vpc.py
+awsscripter audit CISP
+awsscripter audit PCIDSS
 
+Usage: awsscripter [OPTIONS] COMMAND [ARGS]...
 
-We can create a stack with the ``create-stack`` command. This ``vpc`` stack contains a VPC::
+  awsscripter is a tool to manage your cloud native infrastructure
+  deployments.
 
-  $ sceptre create-stack dev vpc
-  dev/vpc - Creating stack
-  dev/vpc VirtualPrivateCloud AWS::EC2::VPC CREATE_IN_PROGRESS
-  dev/vpc VirtualPrivateCloud AWS::EC2::VPC CREATE_COMPLETE
-  dev/vpc sceptre-demo-dev-vpc AWS::CloudFormation::Stack CREATE_COMPLETE
-
-
-The ``subnets`` stack contains a subnet which must be created in the VPC. To do this, we need to pass the VPC ID, which is exposed as a stack output of the ``vpc`` stack, to a parameter of the ``subnets`` stack. Sceptre automatically resolves this dependency for us::
-
-  $ sceptre create-stack dev subnets
-  dev/subnets - Creating stack
-  dev/subnets Subnet AWS::EC2::Subnet CREATE_IN_PROGRESS
-  dev/subnets Subnet AWS::EC2::Subnet CREATE_COMPLETE
-  dev/subnets sceptre-demo-dev-subnets AWS::CloudFormation::Stack CREATE_COMPLETE
-
-
-Sceptre implements meta-operations, which allow us to find out information about our stacks::
-
-  $ sceptre describe-env-resources dev
-  dev/subnets:
-  - LogicalResourceId: Subnet
-    PhysicalResourceId: subnet-445e6e32
-  dev/vpc:
-  - LogicalResourceId: VirtualPrivateCloud
-    PhysicalResourceId: vpc-c4715da0
-
-
-Sceptre provides environment-level commands. This one deletes the whole ``dev`` environment. The subnet exists within the vpc, so it must be deleted first. Sceptre handles this automatically::
-
-  $ sceptre delete-env dev
-  dev/subnets - Deleting stack
-  dev/subnets Subnet AWS::EC2::Subnet DELETE_IN_PROGRESS
-  dev/subnets - Stack deleted
-  dev/vpc - Deleting stack
-  dev/vpc VirtualPrivateCloud AWS::EC2::VPC DELETE_IN_PROGRESS
-  dev/vpc - Stack deleted
-
-
-Usage
------
-
-awsscripter can be used from the CLI, or imported as a Python package.
-
-CLI::
-
-  Usage: sceptre [OPTIONS] COMMAND [ARGS]...
-
-  Options:
+Options:
   --version             Show the version and exit.
   --debug               Turn on debug logging.
-  --dir TEXT            Specify sceptre directory.
+  --dir TEXT            Specify awsscripter directory.
   --output [yaml|json]  The formatting style for command output.
   --no-colour           Turn off output colouring.
   --var TEXT            A variable to template into config files.
@@ -97,63 +39,65 @@ CLI::
                         files.
   --help                Show this message and exit.
 
-  Commands:
-  continue-update-rollback  Roll stack back to working state.
-  create-change-set         Creates a change set.
-  create-stack              Creates the stack.
-  delete-change-set         Delete the change set.
-  delete-env                Delete all stacks.
-  delete-stack              Delete the stack.
-  describe-change-set       Describe the change set.
-  describe-env              Describe the stack statuses.
-  describe-env-resources    Describe the env's resources.
-  describe-stack-outputs    Describe stack outputs.
-  describe-stack-resources  Describe the stack's resources.
-  execute-change-set        Execute the change set.
-  generate-template         Display the template used.
-  get-stack-policy          Display the stack policy used.
-  launch-env                Creates or updates all stacks.
-  launch-stack              Create or launch the stack.
-  list-change-sets          List change sets.
-  lock-stack                Prevent stack updates.
-  set-stack-policy          Set stack policy.
-  unlock-stack              Allow stack updates.
-  update-stack              Update the stack.
-  update-stack-cs           Update the stack via change set.
-  validate-template         Validate the template.
+Commands:
+  audit        Commands for auditing aws environment with...
+  init         Commands for initialising awsscripter...
+  list         packet security check :return:
+  monitor      Commands for auditing aws environment with...
+  security     packet security check :return:
+  stack        Commands for auditing aws environment with...
+  testcommand  A sample testcommand
+	sub-commands:
+		#awsscripter stack
+			Usage: awsscripter stack [OPTIONS] COMMAND [ARGS]...
+			Options:
+			  --help  Show this message and exit.
 
+			Commands:
+			  create      Creates a stack or a change set.
+			  delete      Deletes a stack or a change set.
+			  describe    Commands for describing attributes of stacks.
+			  execute     Executes a change set.
+			  generate    Prints the template.
+			  launch      Launch a stack or environment.
+			  list        Commands for listing attributes of stacks.
+			  set-policy  Sets stack policy.
+			  status      Print status of stack or environment.
+			  update      Update a stack.
+			  validate    Validates the template.
+		#awsscripter init
+			Usage: awsscripter init [OPTIONS] COMMAND [ARGS]...
+
+			  Commands for initialising awsscripter projects.
+
+			Options:
+			  --help  Show this message and exit.
+
+			Commands:
+			  env      Initialises an environment in a project.
+			  project  Initialises a new project.
 
 Python:
 
 .. code-block:: python
-
-  from sceptre.environment import Environment
-
-  env = Environment("/path/to/sceptre_dir", "environment_name")
-  stack = env.stacks["stack_name"]
-  stack.create()
-
-A full API description of the sceptre package can be found in the `Documentation <https://sceptre.cloudreach.com/latest/docs/index.html>`__.
-
 
 Install
 -------
 
 ::
 
-  $ pip install sceptre
+  $ pip install awsscripter
 
-More information on installing sceptre can be found in our `Installation Guide <https://sceptre.cloudreach.com/latest/docs/install.html>`_.
+More information on installing sceptre can be found in our `Installation Guide .
 
 
 Tutorial and Documentation
 --------------------------
 
-- `Get Started <https://sceptre.cloudreach.com/latest/docs/get_started.html>`_
-- `Documentation <https://sceptre.cloudreach.com/latest/docs/index.html>`__
 
 
 Contributions
 -------------
 
 See our `Contributing Guide <CONTRIBUTING.rst>`_.
+
