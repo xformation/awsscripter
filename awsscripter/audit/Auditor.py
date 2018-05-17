@@ -5,20 +5,28 @@ and so are a good way to implement caching.
 An instance of the class is created for each invocation, so instance fields can
 be set from the input without the data persisting."""
 from __future__ import print_function
+from awsscripter.common.LambdaBase import LambdaBase
+from awsscripter.audit.CredReport import CredReport
+from awsscripter.audit.PasswordPolicy import PasswordPolicy
+from awsscripter.audit.CloudTrail import CloudTrail
+from awsscripter.audit.Controls import Control
 
-import json
 import logging
-import sys
+import json
+import csv
 import time
+import sys
+import re
+import tempfile
+import getopt
+import os
 from datetime import datetime
-
 import boto3
 
-from awsscripter.audit.CredReport import CredReport
-from awsscripter.common.LambdaBase import LambdaBase
 from awsscripter.common.connection_manager import ConnectionManager
+from awsscripter.common.helpers import get_external_stack_name
 from awsscripter.hooks import add_audit_hooks
-
+from awsscripter.resolvers import ResolvableProperty
 
 class Auditor(LambdaBase):
     # --- Script controls ---
@@ -80,6 +88,7 @@ class Auditor(LambdaBase):
         self.on_failure = on_failure
         self.dependencies = dependencies or []
         self.tags = tags or {}
+        self.control=Control(parameters)
 
     def __repr__(self):
         return (
@@ -131,80 +140,85 @@ class Auditor(LambdaBase):
         self.logger.info("%s - Auditing Account", self.name)
         cred_reporter = CredReport("us-east-1")
         cred_report = cred_reporter.get_cred_report()
+        passpol = PasswordPolicy()
+        passwordpolicy = passpol.get_account_password_policy()
+        reglist = CloudTrail()
+        regions = reglist.get_regions()
+        #print(regions)
+        region_list = reglist.get_regions()
+        cloud_trails = reglist.get_cloudtrails(regions)
         # Run individual controls.
         # Comment out unwanted controls
         control1 = []
-        control1.append(self.control_1_1_root_use(cred_report))
+        control1.append(self.control.control_1_1_root_use(cred_report))
+        control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control.control_1_3_unused_credentials(cred_report))
+        control1.append(self.control.control_1_4_rotated_keys(cred_report))
+        control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
+        control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
+        control1.append(self.control.control_1_7_password_policy_symbol(passwordpolicy))
+        control1.append(self.control.control_1_8_password_policy_number(passwordpolicy))
+        control1.append(self.control.control_1_9_password_policy_length(passwordpolicy))
+        control1.append(self.control.control_1_10_password_policy_reuse(passwordpolicy))
+        control1.append(self.control.control_1_11_password_policy_expire(passwordpolicy))
+        control1.append(self.control.control_1_12_root_key_exists(cred_report))
+        control1.append(self.control.control_1_13_root_mfa_enabled())
+        control1.append(self.control.control_1_14_root_hardware_mfa_enabled())
+        control1.append(self.control.control_1_15_security_questions_registered())
+        control1.append(self.control.control_1_16_no_policies_on_iam_users())
+        control1.append(self.control.control_1_17_detailed_billing_enabled())
+        control1.append(self.control.control_1_18_ensure_iam_master_and_manager_roles())
+        control1.append(self.control.control_1_19_maintain_current_contact_details())
+        control1.append(self.control.control_1_21_ensure_iam_instance_roles_used())
+        control1.append(self.control.control_1_22_ensure_incident_management_roles())
+        control1.append(self.control.control_1_23_no_active_initial_access_keys_with_iam_user(cred_report))
+        control1.append(self.control.control_1_24_no_overly_permissive_policies())
+
+
+        control2 = []
+        control2.append(self.control.control_2_1_ensure_cloud_trail_all_regions(cloud_trails))
+        control2.append(self.control.control_2_2_ensure_cloudtrail_validation(cloud_trails))
+        control2.append(self.control.control_2_3_ensure_cloudtrail_bucket_not_public(cloud_trails))
+        control2.append(self.control.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloud_trails))
+        control2.append(self.control.control_2_5_ensure_config_all_regions(regions))
+        control2.append(self.control.control_2_6_ensure_cloudtrail_bucket_logging(cloud_trails))
+        control2.append(self.control.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
+        control2.append(self.control.control_2_8_ensure_kms_cmk_rotation(regions))
+
+        control3 = []
+        control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
+        control3.append(self.control.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloud_trails))
+        control3.append(self.control.control_3_3_ensure_log_metric_filter_root_usage(cloud_trails))
+        control3.append(self.control.control_3_4_ensure_log_metric_iam_policy_change(cloud_trails))
+        control3.append(self.control.control_3_5_ensure_log_metric_cloudtrail_configuration_changes(cloud_trails))
+        control3.append(self.control.control_3_6_ensure_log_metric_console_auth_failures(cloud_trails))
+        control3.append(self.control.control_3_7_ensure_log_metric_disabling_scheduled_delete_of_kms_cmk(cloud_trails))
+        control3.append(self.control.control_3_8_ensure_log_metric_s3_bucket_policy_changes(cloud_trails))
+        control3.append(self.control.control_3_9_ensure_log_metric_config_configuration_changes(cloud_trails))
+        control3.append(self.control.control_3_10_ensure_log_metric_security_group_changes(cloud_trails))
+        control3.append(self.control.control_3_11_ensure_log_metric_nacl(cloud_trails))
+        control3.append(self.control.control_3_12_ensure_log_metric_changes_to_network_gateways(cloud_trails))
+        control3.append(self.control.control_3_13_ensure_log_metric_changes_to_route_tables(cloud_trails))
+        control3.append(self.control.control_3_14_ensure_log_metric_changes_to_vpc(cloud_trails))
+        control3.append(self.control.control_3_15_verify_sns_subscribers())
+
+
+        control4 = []
+        control4.append(self.control.control_4_1_ensure_ssh_not_open_to_world(region_list))
+        control4.append(self.control.control_4_2_ensure_rdp_not_open_to_world(region_list))
+        control4.append(self.control.control_4_3_ensure_flow_logs_enabled_on_all_vpc(region_list))
+        control4.append(self.control.control_4_4_ensure_default_security_groups_restricts_traffic(region_list))
+        control4.append(self.control.control_4_5_ensure_route_tables_are_least_access(region_list))
         # Join results
         controls = []
         controls.append(control1)
+        controls.append(control2)
+        controls.append(control3)
+        controls.append(control4)
 
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             Auditor.json_output(controls)
-
-
-
-    # --- 1 Identity and Access Management ---
-
-    # 1.1 Avoid the use of the "root" account (Scored)
-    def control_1_1_root_use(self, credreport):
-        """Summary
-
-        Args:
-            credreport (TYPE): Description
-
-        Returns:
-            TYPE: Description
-        """
-        result = True
-        failReason = ""
-        offenders = []
-        control = "1.1"
-        description = "Avoid the use of the root account"
-        scored = True
-        if "Fail" in credreport:  # Report failure in control
-            sys.exit(credreport)
-        # Check if root is used in the last 24h
-        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
-        frm = "%Y-%m-%dT%H:%M:%S+00:00"
-
-        try:
-            pwdDelta = (datetime.strptime(now, frm) - datetime.strptime(credreport[0]['password_last_used'], frm))
-            if (pwdDelta.days == self.CONTROL_1_1_DAYS) & (pwdDelta.seconds > 0):  # Used within last 24h
-                failReason = "Used within 24h"
-                result = False
-        except:
-            if credreport[0]['password_last_used'] == "N/A" or "no_information":
-                pass
-            else:
-                print("Something went wrong")
-
-        try:
-            key1Delta = (
-            datetime.strptime(now, frm) - datetime.strptime(credreport[0]['access_key_1_last_used_date'], frm))
-            if (key1Delta.days == self.CONTROL_1_1_DAYS) & (key1Delta.seconds > 0):  # Used within last 24h
-                failReason = "Used within 24h"
-                result = False
-        except:
-            if credreport[0]['access_key_1_last_used_date'] == "N/A" or "no_information":
-                pass
-            else:
-                print("Something went wrong")
-        try:
-            key2Delta = datetime.strptime(now, frm) - datetime.strptime(credreport[0]['access_key_2_last_used_date'],
-                                                                        frm)
-            if (key2Delta.days == self.CONTROL_1_1_DAYS) & (key2Delta.seconds > 0):  # Used within last 24h
-                failReason = "Used within 24h"
-                result = False
-        except:
-            if credreport[0]['access_key_2_last_used_date'] == "N/A" or "no_information":
-                pass
-            else:
-                print("Something went wrong")
-        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
-                'Description': description, 'ControlId': control}
-
     def json_output(controlResult):
         """Summary
 
