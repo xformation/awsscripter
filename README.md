@@ -20,33 +20,34 @@ Features:
 
 Example
 -------
-awsscripter audit CISP
-awsscripter audit PCIDSS
+    command: awsscripter audit
+  Commands for auditing aws environment with awsscripter. This will iclude
+  CISP/ PCIDSS/ HIPPA Audit.
 
-Usage: awsscripter [OPTIONS] COMMAND [ARGS]...
-
-  awsscripter is a tool to manage your cloud native infrastructure
-  deployments.
-
-Options:
-  --version             Show the version and exit.
-  --debug               Turn on debug logging.
-  --dir TEXT            Specify awsscripter directory.
-  --output [yaml|json]  The formatting style for command output.
-  --no-colour           Turn off output colouring.
-  --var TEXT            A variable to template into config files.
-  --var-file FILENAME   A YAML file of variables to template into config
-                        files.
-  --help                Show this message and exit.
-
-Commands:
-  audit        Commands for auditing aws environment with...
-  init         Commands for initialising awsscripter...
-  list         packet security check :return:
-  monitor      Commands for auditing aws environment with...
-  security     packet security check :return:
-  stack        Commands for auditing aws environment with...
-  testcommand  A sample testcommand
+    Usage: awsscripter [OPTIONS] COMMAND [ARGS]...
+    
+      awsscripter is a tool to manage your cloud native infrastructure
+      deployments.
+    
+    Options:
+      --version             Show the version and exit.
+      --debug               Turn on debug logging.
+      --dir TEXT            Specify awsscripter directory.
+      --output [yaml|json]  The formatting style for command output.
+      --no-colour           Turn off output colouring.
+      --var TEXT            A variable to template into config files.
+      --var-file FILENAME   A YAML file of variables to template into config
+                            files.
+      --help                Show this message and exit.
+    
+    Commands:
+      audit        Commands for auditing aws environment with...
+      init         Commands for initialising awsscripter...
+      list         packet security check :return:
+      monitor      Commands for auditing aws environment with...
+      security     packet security check :return:
+      stack        Commands for auditing aws environment with...
+      testcommand  A sample testcommand
 	sub-commands:
 		#awsscripter stack
 			Usage: awsscripter stack [OPTIONS] COMMAND [ARGS]...
@@ -88,7 +89,7 @@ Install
 
   $ pip install awsscripter
 
-More information on installing sceptre can be found in our `Installation Guide .
+More information on installing awsscripter can be found in our `Installation Guide .
 
 
 Tutorial and Documentation
