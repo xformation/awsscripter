@@ -22,6 +22,7 @@ from awsscripter.stack.helpers import  setup_logging, catch_exceptions
 from awsscripter import __version__
 from awsscripter.cli.security.security import security_group
 from awsscripter.cli.testcommand.testcommand import testcommand_group
+from awsscripter.cli.awsbilling.awsbilling import billing_group
 
 @click.group()
 @click.version_option(version=__version__, prog_name="awsscripter")
@@ -91,3 +92,4 @@ cli.add_command(monitoring_group)
 cli.add_command(testcommand_group)
 cli.add_command(security_group)
 cli.add_command(list_group)
+cli.add_command(billing_group)
