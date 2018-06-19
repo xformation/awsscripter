@@ -1,6 +1,6 @@
-=======
+===========
 awsscripter
-=======
+===========
 
 About
 -----
@@ -20,23 +20,21 @@ Features:
 
 Example
 -------
-awsscripter audit CISP
-awsscripter audit PCIDSS
+> awsscripter audit CISP
+
+> awsscripter audit PCIDSS
 
 Usage: awsscripter [OPTIONS] COMMAND [ARGS]...
-
-  awsscripter is a tool to manage your cloud native infrastructure
-  deployments.
+awsscripter is a tool to manage your cloud native infrastructure deployments.
 
 Options:
   --version             Show the version and exit.
   --debug               Turn on debug logging.
   --dir TEXT            Specify awsscripter directory.
-  --output [yaml|json]  The formatting style for command output.
+  --output              The formatting style for command output.
   --no-colour           Turn off output colouring.
   --var TEXT            A variable to template into config files.
-  --var-file FILENAME   A YAML file of variables to template into config
-                        files.
+  --var-file FILENAME   A YAML file of variables to template into config files.
   --help                Show this message and exit.
 
 Commands:
@@ -47,25 +45,30 @@ Commands:
   security     packet security check :return:
   stack        Commands for auditing aws environment with...
   testcommand  A sample testcommand
-	sub-commands:
-		#awsscripter stack
-			Usage: awsscripter stack [OPTIONS] COMMAND [ARGS]...
-			Options:
-			  --help  Show this message and exit.
+sub-commands:
+    > awsscripter stack
 
-			Commands:
-			  create      Creates a stack or a change set.
-			  delete      Deletes a stack or a change set.
-			  describe    Commands for describing attributes of stacks.
-			  execute     Executes a change set.
-			  generate    Prints the template.
-			  launch      Launch a stack or environment.
-			  list        Commands for listing attributes of stacks.
-			  set-policy  Sets stack policy.
-			  status      Print status of stack or environment.
-			  update      Update a stack.
-			  validate    Validates the template.
-		#awsscripter init
+    Usage: awsscripter stack [OPTIONS] COMMAND [ARGS]...
+
+Options:
+
+  --help  Show this message and exit.
+
+    Commands:
+	create      Creates a stack or a change set.
+	delete      Deletes a stack or a change set.
+	describe    Commands for describing attributes of stacks.
+	execute     Executes a change set.
+	generate    Prints the template.
+	launch      Launch a stack or environment.
+	list        Commands for listing attributes of stacks.
+	set-policy  Sets stack policy.
+	status      Print status of stack or environment.
+	update      Update a stack.
+	validate    Validat1. - - - - es the template.
+
+> awsscripter init
+
 			Usage: awsscripter init [OPTIONS] COMMAND [ARGS]...
 
 			  Commands for initialising awsscripter projects.
@@ -77,19 +80,12 @@ Commands:
 			  env      Initialises an environment in a project.
 			  project  Initialises a new project.
 
-Python:
-
-.. code-block:: python
-
 Install
 -------
 
 ::
 
   $ pip install awsscripter
-
-More information on installing sceptre can be found in our `Installation Guide .
-
 
 Tutorial and Documentation
 --------------------------
@@ -100,4 +96,3 @@ Contributions
 -------------
 
 See our `Contributing Guide <CONTRIBUTING.rst>`_.
-

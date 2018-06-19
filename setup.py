@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from awsscripter import __version__
-from setuptools import setup
-from distutils.core import setup
+import setuptools
+from setuptools import setup,find_packages
+#from distutils.core import setup
+
 with open("README.rst") as readme_file:
     readme = readme_file.read()
 
@@ -33,24 +35,17 @@ setup_requirements = [
     "pytest-runner>=3"
 ]
 
-setup(
+setuptools.setup(
     name="awsscripter",
     version=__version__,
     description="Cloud Provisioning Tool",
+    long_description_content_type="text/markdown",
     long_description=readme,
     author="Papu",
     author_email="papu.bhattacharya@synectiks.com",
     license='Apache2',
-    #url="https://github.com/cloudreach/awsscripter",
     url="https://github.com/xformation/awsscripter",
-    packages=[
-        "awsscripter",
-        "awsscripter/resolvers",
-        "awsscripter/hooks",
-        "awsscripter/cli",
-        "awsscripter/stack",
-        "awsscripter/common"
-    ],
+    packages=setuptools.find_packages(),
     package_dir={
         "awsscripter": "awsscripter"
     },
