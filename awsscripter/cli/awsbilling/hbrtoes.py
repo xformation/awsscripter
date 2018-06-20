@@ -15,6 +15,5 @@ def hbrtoes_command(ctx, level):
     """
     logger = logging.getLogger(__name__)
     logger.info("Hourly Billing Report" + level)
-    auditor = Auditor("myname", "myproject", "us-east-1")
-    auditor.handle("test", "test")
-    biller= billtoes()
+    biller = billtoes()
+    biller.main()

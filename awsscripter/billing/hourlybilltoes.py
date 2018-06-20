@@ -46,7 +46,7 @@ class billtoes():
             response = urllib.request.urlopen(urlData)
         return response.read().decode('utf-8')
 
-    def myconverter(value):
+    def myconverter(self,value):
         try:
             value=float(value)
             return value
@@ -104,3 +104,6 @@ class billtoes():
                 response = urllib.request.urlopen(req, jsondataasbytes)
         except Exception as e:
             print ("Error:  {}".format(str(e)))
+
+    def main(self):
+        clusterName = self.fetch_clusterhealth()
