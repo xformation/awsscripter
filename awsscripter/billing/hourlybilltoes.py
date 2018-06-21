@@ -10,12 +10,12 @@ import sys
 import urllib.request
 from urllib.request import Request, urlopen  # Python 3
 
-class billtoes():
+class Billtoes():
 
-    def __init__(self,read_es_security_enable = False,write_es_security_enable = False):
+    def __init__(self,path=None,read_es_security_enable = False,write_es_security_enable = False):
         self.read_es_security_enable=False
         self.write_es_security_enable=False
-    # ElasticSearch Cluster to Monitor
+        self.path=path
     elasticServer = os.environ.get('ES_CPU_CLUSTER_URL', 'http://10.10.10.50:4571')
     interval = int(os.environ.get('ES_CPU_INTERVAL', '60'))
 
@@ -54,14 +54,15 @@ class billtoes():
             return value
 
 
-    def fetch_clusterhealth(self):
+    def fetch_clusterhealth(self,path):
         try:
             jsonData = {}
             utc_datetime = datetime.datetime.utcnow()
             endpoint = "/_cluster/health"
             urlData = self.elasticServer #+ endpoint
             response = self.handle_urlopen(urlData,username=None, password=None)
-            with open("D:\\Hourlybilling_report-1.csv") as csvfile:
+            # with open("D:\\Hourlybilling_report-1.csv") as csvfile:
+            with open(path) as csvfile:
                 reader = csv.DictReader(csvfile)
                 title = reader.fieldnames
                 for row in reader:
@@ -105,5 +106,5 @@ class billtoes():
         except Exception as e:
             print ("Error:  {}".format(str(e)))
 
-    def main(self):
-        clusterName = self.fetch_clusterhealth()
+    def starter(self,path):
+        clusterName = self.fetch_clusterhealth(path)
