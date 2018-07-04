@@ -263,33 +263,13 @@ class PciAuditor(LambdaBase):
         control3 = []
         control3.append(self.control.IS_3_1_vpc_securitygroup_default_blocked())
         control3.append(self.control.IS_3_2_vpc_main_route_table_no_igw())
-        # control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
-        # control3.append(self.control.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloud_trails))
-        # control3.append(self.control.control_3_3_ensure_log_metric_filter_root_usage(cloud_trails))
-        # control3.append(self.control.control_3_4_ensure_log_metric_iam_policy_change(cloud_trails))
-        # control3.append(self.control.control_3_5_ensure_log_metric_cloudtrail_configuration_changes(cloud_trails))
-        # control3.append(self.control.control_3_6_ensure_log_metric_console_auth_failures(cloud_trails))
-        # control3.append(self.control.control_3_7_ensure_log_metric_disabling_scheduled_delete_of_kms_cmk(cloud_trails))
-        # control3.append(self.control.control_3_8_ensure_log_metric_s3_bucket_policy_changes(cloud_trails))
-        # control3.append(self.control.control_3_9_ensure_log_metric_config_configuration_changes(cloud_trails))
-        # control3.append(self.control.control_3_10_ensure_log_metric_security_group_changes(cloud_trails))
-        # control3.append(self.control.control_3_11_ensure_log_metric_nacl(cloud_trails))
-        # control3.append(self.control.control_3_12_ensure_log_metric_changes_to_network_gateways(cloud_trails))
-        # control3.append(self.control.control_3_13_ensure_log_metric_changes_to_route_tables(cloud_trails))
-        # control3.append(self.control.control_3_14_ensure_log_metric_changes_to_vpc(cloud_trails))
-        # control3.append(self.control.control_3_15_verify_sns_subscribers())
-
 
         control4 = []
         control4.append(self.control.DP_4_1_kms_cmk_rotation_activated())
         control4.append(self.control.DP_4_2_s3_bucket_public_read_prohibited())
         control4.append(self.control.DP_4_3_s3_bucket_public_write_prohibited())
         control4.append(self.control.DP_4_4_s3_bucket_ssl_requests_only())
-        # control4.append(self.control.control_4_1_ensure_ssh_not_open_to_world(region_list))
-        # control4.append(self.control.control_4_2_ensure_rdp_not_open_to_world(region_list))
-        # control4.append(self.control.control_4_3_ensure_flow_logs_enabled_on_all_vpc(region_list))
-        # control4.append(self.control.control_4_4_ensure_default_security_groups_restricts_traffic(region_list))
-        # control4.append(self.control.control_4_5_ensure_route_tables_are_least_access(region_list))
+
         # Join results
         controls = []
         controls.append(control1)
