@@ -5,7 +5,7 @@ import logging
 
 __author__ = 'Papu'
 __email__ = 'papu.bhattacharya@synectiks.com'
-__version__ = '0.0.313'
+__version__ = '0.0.314'
 
 
 # Set up logging to ``/dev/null`` like a library is supposed to.
