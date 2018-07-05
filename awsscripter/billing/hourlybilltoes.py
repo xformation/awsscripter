@@ -8,6 +8,8 @@ import json
 import os
 import sys
 import urllib.request
+import click
+
 from urllib.request import Request, urlopen  # Python 3
 from awsscripter.common.LambdaBase import LambdaBase
 
@@ -73,18 +75,22 @@ class Billtoes():
             jsonData = {}
             utc_datetime = datetime.datetime.utcnow()
             endpoint = "/_cluster/health"
-            urlData = self.elasticServer #+ endpoint
-            print(urlData)
+            urlData = self.elasticServer
+            progressbar = click.progressbar
             response = self.handle_urlopen(urlData,username=None, password=None)
-            # with open("D:\\Hourlybilling_report-1.csv") as csvfile:
+            with open(self.path) as csvfile:
+                rcount = csv.DictReader(csvfile)
+                record_count = sum(1 for _ in rcount) - 1
             with open(self.path) as csvfile:
                 reader = csv.DictReader(csvfile)
                 title = reader.fieldnames
-                for row in reader:
-                    for key, val in row.items():
-                        jsonData[key] = self.myconverter(val)
-                    # print(jsonData)
-                    self.post_data(jsonData, username=None, password=None)
+                with progressbar(length=record_count) as pbar:
+                    for row in reader:
+                        for key, val in row.items():
+                            jsonData[key] = self.myconverter(val)
+                        # print(jsonData)
+                        self.post_data(jsonData, username=None, password=None)
+                        pbar.update(1)
             clusterName = 'elasticsearch'
             return clusterName
         except IOError as err:
@@ -97,8 +103,7 @@ class Billtoes():
         utc_datetime = datetime.datetime.utcnow()
         url_parameters = {'cluster': self.elasticMonitoringCluster, 'index': self.elasticIndex,
             'index_period': utc_datetime.strftime("%Y.%m.%d"), }
-        url = "%(cluster)s/%(index)s-%(index_period)s/cpudata" % url_parameters
-        print(url)
+        url = "%(cluster)s/%(index)s-%(index_period)s/hrbdata" % url_parameters
         headers = {'content-type': 'application/json'}
         try:
             req = Request(url)
@@ -122,15 +127,8 @@ class Billtoes():
             print ("Error:  {}".format(str(e)))
 
     def starter(self):
-        # urlvar = 'http://10.10.10.50:4571'
-        print(self.esurl)
         elasticServer = os.environ.get('ES_CPU_CLUSTER_URL', self.esurl)
-        print(elasticServer)
         interval = int(os.environ.get('ES_CPU_INTERVAL', '60'))
-
-        # ElasticSearch Cluster to Send Metrics
-        elasticIndex = os.environ.get('ES_METRICS_INDEX_NAME', self.index)
-        elasticMonitoringCluster = os.environ.get('ES_METRICS_CPUMONITORING_CLUSTER_URL', 'http://10.10.10.50:4571')
         clusterName = self.fetch_clusterhealth()
 # if __name__ == '__main__':
 #     path="D:\\Hourlybilling_report-1.csv"

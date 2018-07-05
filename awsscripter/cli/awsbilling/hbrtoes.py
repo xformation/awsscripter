@@ -20,6 +20,5 @@ def hbrtoes_command(ctx, level,path,hostip,port,index):
     logger = logging.getLogger(__name__)
     logger.info("Hourly Billing Report" + level)
     esurl=str("http://"+str(hostip)+":"+str(port))
-    print(esurl)
     biller = Billtoes(path,esurl,index)
     biller.starter()
