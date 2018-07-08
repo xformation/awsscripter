@@ -28,7 +28,7 @@ How to Contribute
 Report Bugs
 ***********
 
-Before submitting a bug, please check our `issues page <https://github.com/cloudreach/sceptre/issues>`_ to see if it's already been reported.
+Before submitting a bug, please check our `issues page <https://github.com/xformation/awsscripter/issues>`_ to see if it's already been reported.
 
 When reporting a bug, fill out the required template, and please include as much detail as possible as it helps us resolve issues faster.
 
