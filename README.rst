@@ -96,4 +96,4 @@ Tutorial and Documentation
 Contributions
 -------------
 
-See our `Contributing Guide <CONTRIBUTING.rst>`_.
+See our Contributing Guide https://github.com/xformation/awsscripter/blob/master/CONTRIBUTING.rst .
