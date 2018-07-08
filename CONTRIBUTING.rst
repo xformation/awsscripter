@@ -69,16 +69,16 @@ Please keep in mind:
 Get Started
 -----------
 
-1. Fork the ``sceptre`` repository on GitHub.
+1. Fork the ``awsscripter`` repository on GitHub.
 2. Clone your fork locally::
 
-    $ git clone git@github.org:<github_username>/sceptre.git
+    $ git clone git@github.org:<github_username>/awsscripter.git
 
 3. Install sceptre for development (we recommend you use a `virtual environment <http://docs.python-guide.org/en/latest/dev/virtualenvs/>`_):
 
    .. code-block:: shell
 
-    $ cd sceptre/
+    $ cd awsscripter/
     $ pip install -r requirements.txt
     $ pip install -e .
 
