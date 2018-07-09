@@ -8,5 +8,5 @@ for table in resonse['TableNames']:
     tabdescribe=client.describe_table(TableName=table)
 print(tabdescribe)
 
-if 'SSEDescription' in resonse.keys():
+if 'SSEDescription' in tabdescribe.keys():
     print("found key")

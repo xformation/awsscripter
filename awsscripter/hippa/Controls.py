@@ -2583,7 +2583,7 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    def control5_1_ensure_Dynamodb_SSE_enabled(self, regions):
+    def control_5_1_ensure_Dynamodb_SSE_enabled(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2602,10 +2602,11 @@ class Control():
                 print(table)
                 tabdescribe = client.describe_table(TableName=table)
                 print(tabdescribe)
-                if 'SSEDescription' in resonse.keys():
+                if 'SSEDescription' in tabdescribe.keys():
                     print("found key")
-                    if(resonse['SSEDescription']['Status']=="ENABLED"):
-                        print("SSE enabled on the table")
+                    if(tabdescribe['SSEDescription']['Status'] == "ENABLED"):
+                        # print("SSE enabled on the table")
+                        pass
                 else:
                     print("SSE is not enabled on ")
                     offenders.append(table)
