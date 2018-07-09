@@ -4,7 +4,7 @@ from awsscripter.audit.CredReport import CredReport
 from awsscripter.audit.PasswordPolicy import PasswordPolicy
 from awsscripter.audit.CloudTrail import CloudTrail
 from awsscripter.pciaudit.Controls import Control
-
+from awsscripter.billing import hourlybilltoes
 import logging
 import json
 import csv
@@ -15,7 +15,9 @@ import tempfile
 import getopt
 import os
 from datetime import datetime
+import datetime
 import boto3
+
 
 from awsscripter.common.connection_manager import ConnectionManager
 from awsscripter.common.helpers import get_external_stack_name
@@ -258,7 +260,7 @@ class PciAuditor(LambdaBase):
         control2 = []
         control2.append(self.control.LM_2_1_cloudtrail_centralized_encrypted_lfi())
         control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
-        control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
+        # control2.append(self.control.LM_2_2_cloudwatch_event_bus_centralized())
 
         control3 = []
         control3.append(self.control.IS_3_1_vpc_securitygroup_default_blocked())
@@ -280,6 +282,7 @@ class PciAuditor(LambdaBase):
         # Build JSON structure for console output if enabled
         if self.SCRIPT_OUTPUT_JSON:
             PciAuditor.json_output(controls)
+
     def json_output(controlResult):
         """Summary
 
@@ -289,26 +292,64 @@ class PciAuditor(LambdaBase):
         Returns:
             TYPE: Description
         """
+        temp = dict()
         inner = dict()
         outer = dict()
+        i=0
+        esurl = 'http://10.10.10.50:4571'
+        path = "D://Hourlybilling_report-1.csv"
+        index = "audits"
+        biller = hourlybilltoes.Billtoes(path, esurl, index)
+        # print(controlResult)
         for m in range(len(controlResult)):
             inner = dict()
             for n in range(len(controlResult[m])):
+                # print(controlResult[m])
                 x = int(controlResult[m][n]['ControlId'].split('.')[1])
                 inner[x] = controlResult[m][n]
+                # print(type(inner))
+                # biller.post_data(inner, username=None, password=None)
             y = controlResult[m][0]['ControlId'].split('.')[0]
             outer[y] = inner
+            # print(inner)
+            # esurl = 'http://10.10.10.50:4571'
+            # path = "D://Hourlybilling_report-1.csv"
+            # index = "audits"
+            # biller = hourlybilltoes.Billtoes(path,esurl,index)
+            # biller.starter()
+            # hourlybilltoes.Billtoes.post_data(inner)
+            # biller.post_data(inner, username=None, password=None)
+        for m in range(len(controlResult)):
+        #     biller.post_data(controlResult[m], username=None, password=None)
+            # inner = dict()
+            # esdict = dict()
+            # for n in range(len(controlResult[m])):
+            #     for items in controlResult[n]:
+            for item in controlResult[m]:
+                print(item)
+                temp=item
+                temp['@timestamp'] = str(datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3])
+                biller.post_data(temp, username=None, password=None)
+                i=0
+        print(temp)
+            #     poster=[item]
+            #     biller.post_data(controlResult[m][n], username=None, password=None)
         if PciAuditor.OUTPUT_ONLY_JSON is True:
             print(json.dumps(outer, sort_keys=True, indent=4, separators=(',', ': ')))
         else:
             print("JSON output:")
             print("-------------------------------------------------------")
             print(json.dumps(outer, sort_keys=True, indent=4, separators=(',', ': ')))
+            data=(json.dumps(outer, sort_keys=True, indent=4, separators=(',', ': ')))
             print("-------------------------------------------------------")
             print("\n")
             print("Summary:")
             print(PciAuditor.shortAnnotation(controlResult))
             print("\n")
+
+            with open("outfile.csv", 'w') as outfile:
+                json.dump(data, outfile)
+
         return 0
 
     def shortAnnotation(controlResult):
@@ -354,5 +395,5 @@ class PciAuditor(LambdaBase):
             MessageStructure='json'
         )
 # input values for args and/or kwargs
-# auditor = PciAuditor("myname", "myproject", "us-east-1")
-# auditor.handle("test","test")
+auditor = PciAuditor("myname", "myproject", "us-east-1")
+auditor.handle("test","test")
