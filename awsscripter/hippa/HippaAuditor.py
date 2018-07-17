@@ -22,6 +22,7 @@ import getopt
 import os
 from datetime import datetime
 import boto3
+import yaml
 
 from awsscripter.common.connection_manager import ConnectionManager
 from awsscripter.common.helpers import get_external_stack_name
@@ -212,6 +213,7 @@ class HippaAuditor(LambdaBase):
         # Join results
         control5 = []
         control5.append(self.control.control_5_1_ensure_Dynamodb_SSE_enabled(regions))
+        control5.append(self.control.control_5_2_db_on_instance_storage_encrypted(regions))
         controls = []
         # controls.append(control1)
         # controls.append(control2)

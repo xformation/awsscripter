@@ -2596,22 +2596,67 @@ class Control():
         scored = False
         client = boto3.client('dynamodb')
         resonse = client.list_tables()
-        print(resonse)
+        # print(resonse)
         for n in regions:
             for table in resonse['TableNames']:
-                print(table)
+                # print(table)
                 tabdescribe = client.describe_table(TableName=table)
-                print(tabdescribe)
+                # print(tabdescribe)
                 if 'SSEDescription' in tabdescribe.keys():
-                    print("found key")
-                    if(tabdescribe['SSEDescription']['Status'] == "ENABLED"):
+                    # print("found key")
+                    if tabdescribe['SSEDescription']['Status'] == "ENABLED":
                         # print("SSE enabled on the table")
                         pass
                 else:
-                    print("SSE is not enabled on ")
+                    # print("SSE is not enabled on ")
                     offenders.append(table)
         if (len(offenders)) > 0:
             result=False
+            failReason = "SSE not enabled on Dynamodb"
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_2_db_on_instance_storage_encrypted(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.2"
+        description = "Ensure db on ec2 instance should have encrypted storage"
+        scored = False
+        # Connect to EC2
+        # ec2 = boto3.resource('ec2')
+        client = boto3.client('ec2')
+        for n in regions:
+            ec2 = boto3.resource('ec2',region_name=n)
+        # Get information for all running instances
+            running_instances = ec2.instances.filter(Filters=[{
+                'Name': 'instance-state-name',
+                'Values': ['running']}])
+            # running_instances = ec2.instances.all()
+            try:
+                for instance in running_instances:
+                    for tag in instance.tags:  # extracting instance name
+                        if 'Name' in tag['Key']:
+                            name = tag['Value']
+                            instance_id = instance.instance_id
+                            blkdmapping = instance.block_device_mappings # Getting volumes for each instance
+                    if 'um' in name or 'ECS' in name or 'db' in name or 'database' in name or 'sql' in name or 'couchbase' 'raik' in name or 'hbase' in name or 'oracle' in name or 'hana' in name or 'hana' in name or 'postgres' in name or 'cassandra' in name or 'hdoop' in name or 'mongo' in name or 'graph' in name or 'Neo4j' in name:
+                        print(instance_id)
+                        for volumes in blkdmapping:
+                            response = client.describe_volumes(VolumeIds=[volumes['Ebs']['VolumeId']])
+                            for i in response['Volumes']:
+                                # print(volumes['Ebs']['VolumeId'], i['Encrypted'])
+                                if(i['Encrypted']) == False:
+                                    result = False
+                                    failReason = "storage with no encryption found"
+                                    offenders.append(name)
+            except Exception:
+                pass
 
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
