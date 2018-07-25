@@ -153,7 +153,7 @@ class HippaAuditor(LambdaBase):
         control1 = []
         control1.append(self.control.control_1_1_root_use(cred_report))
         # control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        # control1.append(self.control.control_1_3_unused_credentials(cred_report))
+        control1.append(self.control.control_1_3_unused_credentials(cred_report)) #i have to disable this
         control1.append(self.control.control_1_4_rotated_keys(cred_report))
         control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
         control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
@@ -183,7 +183,7 @@ class HippaAuditor(LambdaBase):
         control2.append(self.control.control_2_4_ensure_cloudtrail_cloudwatch_logs_integration(cloud_trails))
         # control2.append(self.control.control_2_5_ensure_config_all_regions(regions))
         # control2.append(self.control.control_2_6_ensure_cloudtrail_bucket_logging(cloud_trails))
-        # control2.append(self.control.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
+        control2.append(self.control.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
         control2.append(self.control.control_2_8_ensure_kms_cmk_rotation(regions))
         #
         control3 = []
@@ -204,21 +204,23 @@ class HippaAuditor(LambdaBase):
         # control3.append(self.control.control_3_15_verify_sns_subscribers())
         #
         #
-        control4 = []
+        # control4 = []
         # control4.append(self.control.control_4_1_ensure_ssh_not_open_to_world(region_list))
         # control4.append(self.control.control_4_2_ensure_rdp_not_open_to_world(region_list))
-        control4.append(self.control.control_4_3_ensure_flow_logs_enabled_on_all_vpc(region_list))
-        control4.append(self.control.control_4_4_ensure_default_security_groups_restricts_traffic(region_list))
+        # control4.append(self.control.control_4_3_ensure_flow_logs_enabled_on_all_vpc(region_list))
+        # control4.append(self.control.control_4_4_ensure_default_security_groups_restricts_traffic(region_list))
         # control4.append(self.control.control_4_5_ensure_route_tables_are_least_access(region_list))
         # Join results
         control5 = []
         control5.append(self.control.control_5_1_ensure_Dynamodb_SSE_enabled(regions))
         control5.append(self.control.control_5_2_db_on_instance_storage_encrypted(regions))
+        control5.append(self.control.control_5_10_mfa_all_users(cred_report))
+
         controls = []
         controls.append(control1)
         controls.append(control2)
         controls.append(control3)
-        controls.append(control4)
+        # controls.append(control4)
         controls.append(control5)
 
         # Build JSON structure for console output if enabled

@@ -2660,3 +2660,67 @@ class Control():
 
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_5_10_mfa_all_users(self, credreport):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.10"
+        description = "Ensure mfa enabled for all users"
+        scored = True
+        # Get current time
+        # now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        # frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['mfa_active'] == "true":
+                pass
+            else:
+                offenders.append(credreport[i]['user'])
+        if(len(offenders) > 0):
+            result = False
+            failReason = "mfa not enabled or one or more users"
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_11_IAM_SSL_TLS_cert(self):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.11"
+        description = "IAM SSL Certificate"
+        scored = True
+
+
+        # iam ssl cert expiration in 1 week
+        client = boto3.client('iam')
+        response = client.list_server_certificates()
+        # print(response)
+        now = time.strftime('%Y-%m-%d %H:%M:%S+00:00', time.gmtime(time.time()))
+        try:
+            for cert in response['ServerCertificateMetadataList']:
+                print(cert['Expiration'])
+            # Need to implement cert expiration logic once cert is created
+        except:
+            print('no cert found')
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
