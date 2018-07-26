@@ -2731,7 +2731,7 @@ class Control():
                     'Description': description, 'ControlId': control}
 
     # 5.5 Remove unused security groups
-    def control_5_4_Remove_unused_security_groups(self, regions):
+    def control_5_5_Remove_unused_security_groups(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2768,3 +2768,173 @@ class Control():
 
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_5_6_ALB_secured_listener_certificate_about_to_expire_in_1_month(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        mydict = set()
+        control = "5.6"
+        description = "ALB secured listener certificate about to expire in 1 month"
+        scored = False
+        client = boto3.client('elbv2')
+        acmclient = boto3.client('acm')
+        for n in regions:
+            response = client.describe_load_balancers()
+            for elbarn in response['LoadBalancers']:
+                response = client.describe_listeners(LoadBalancerArn=elbarn['LoadBalancerArn'])
+                for listenerArn in response['Listeners']:
+                    if listenerArn['Protocol'] == 'HTTP':
+                        pass
+                    elif listenerArn['Protocol'] == 'HTTPS':
+                        pass
+                        resp = client.describe_listener_certificates(ListenerArn=listenerArn['ListenerArn'])
+                        for certarn in resp['Certificates']:
+                            if certarn['IsDefault'] is True:
+                                resss = acmclient.describe_certificate(CertificateArn=certarn['CertificateArn'])
+
+                                certdate = resss['Certificate']['NotAfter']
+                                a = (certdate.replace(tzinfo=None))
+                                # print(a)
+                                now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+                                frm = "%Y-%m-%dT%H:%M:%S+00:00"
+                                delta = a - datetime.strptime(now, frm)
+                                if delta.days < 30:
+                                    result = False
+                                    failReason = "Certificate will expires after 30 days"
+                                    offenders.append(certarn['CertificateArn'])
+                                else:
+                                    result = False
+                                    failReason = "Certificate will expires after more than 30 days"
+                                    offenders.append(certarn['CertificateArn'])
+
+        if (len(offenders)) > 0:
+            result = False
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_7_RDS_should_not_have_be_open_to_a_large_scope(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.7"
+        description = "RDS should not have be open to a large scope"
+        scored = False
+        client = boto3.client('rds')
+        for n in regions:
+            response = client.describe_db_instances()
+            for dbid in response['DBInstances']:
+                for subnet in dbid['DBSubnetGroup']['Subnets']:
+                    # print(subnet['SubnetIdentifier'])
+                    clien = boto3.client('ec2')
+                    respons = clien.describe_route_tables(
+                        Filters=[
+                            {
+                                'Name': 'association.subnet-id',
+                                'Values': [
+                                    subnet['SubnetIdentifier'],
+                                ]
+                            },
+                        ],
+                    )
+                    # print(respons['RouteTables'])
+                    for routes in respons['RouteTables']:
+                        # print(routes['Routes'])
+                        for des in routes['Routes']:
+                            # print(des)
+                            if des['DestinationCidrBlock'] == '0.0.0.0/0' or des['GatewayId'].startswith('igw-'):
+                                failReason = "This routes are publicly accesible"
+                            else:
+                                failReason = "This routes are not  publicly accesible"
+                offenders.append(dbid['DBInstanceIdentifier'])
+        if (len(offenders)) > 0:
+            result = False
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_8_ALB_secured_listener_certificate_about_to_expire_in_1_week(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.8"
+        description = "ALB secured listener certificate about to expire in 1 week"
+        scored = False
+        client = boto3.client('elbv2')
+        acmclient = boto3.client('acm')
+        for n in regions:
+            response = client.describe_load_balancers()
+            for elbarn in response['LoadBalancers']:
+                response = client.describe_listeners(LoadBalancerArn=elbarn['LoadBalancerArn'])
+                for listenerArn in response['Listeners']:
+                    if listenerArn['Protocol'] == 'HTTP':
+                        pass
+                    elif listenerArn['Protocol'] == 'HTTPS':
+                        pass
+                        resp = client.describe_listener_certificates(ListenerArn=listenerArn['ListenerArn'])
+                        for certarn in resp['Certificates']:
+                            if certarn['IsDefault'] is True:
+                                resss = acmclient.describe_certificate(CertificateArn=certarn['CertificateArn'])
+
+                                certdate = resss['Certificate']['NotAfter']
+                                a = (certdate.replace(tzinfo=None))
+                                # print(a)
+                                now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+                                frm = "%Y-%m-%dT%H:%M:%S+00:00"
+                                delta = a - datetime.strptime(now, frm)
+                                if delta.days < 30:
+                                    result = False
+                                    failReason = "Certificate will expires after 7 days"
+                                else:
+                                    result = False
+                                    failReason = "Certificate will expires after more than 7 days"
+                                    offenders.append(certarn['CertificateArn'])
+
+        if (len(offenders)) > 0:
+            result = False
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_9_ELB_is_setup_with_SSL_for_secure_communication(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        mydict = set()
+        control = "5.9"
+        description = "ELB is setup with SSL for secure communication"
+        scored = False
+        client = boto3.client('elbv2')
+        for n in regions:
+            response = client.describe_load_balancers()
+            for elbarn in response['LoadBalancers']:
+                response = client.describe_listeners(LoadBalancerArn=elbarn['LoadBalancerArn'])
+                for listenerArn in response['Listeners']:
+                    if listenerArn['Protocol'] == 'HTTPS':
+                        result = False
+                        failReason = "ELB is passed through secured protocol "
+                    else:
+                        result = True
+                        offenders.append(listenerArn['ListenerArn'])
+        if (len(offenders)) > 0:
+            result = False
+            failReason = "ELB is passed not through secured protocol "
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+
+

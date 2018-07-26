@@ -242,9 +242,13 @@ class HippaAuditor(LambdaBase):
         control5 = []
         # control5.append(self.control.control_5_1_ensure_Dynamodb_SSE_enabled(regions))
         # control5.append(self.control.control_5_2_ensure_kms_cmk_rotation(regions))
-        # control5.append(self.control.control_5_4_RDS_should_not_have_Public_Interface(regions))
+        # control5.append(self.control.control_5_3_RDS_should_not_have_Public_Interface(regions))
         # control5.append(self.control.control_5_4_RDS_storage_should_be_encrypted(regions))
-        control5.append(self.control.control_5_4_Remove_unused_security_groups(regions))
+        # control5.append(self.control.control_5_5_Remove_unused_security_groups(regions))
+        # control5.append(self.control.control_5_6_ELB_secured_listener_certificate_about_to_expire_in_1_month(regions))
+        # control5.append(self.control.control_5_7_RDS_should_not_have_be_open_to_a_large_scope(regions))
+        # control5.append(self.control.control_5_8_ALB_secured_listener_certificate_about_to_expire_in_1_week(regions))
+        # control5.append(self.control.control_5_9_ELB_is_setup_with_SSL_for_secure_communication(regions))
         controls = []
         # controls.append(control1)
         # controls.append(control2)
