@@ -2777,7 +2777,6 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        mydict = set()
         control = "5.6"
         description = "ALB secured listener certificate about to expire in 1 month"
         scored = False
@@ -2914,7 +2913,6 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        mydict = set()
         control = "5.9"
         description = "ELB is setup with SSL for secure communication"
         scored = False
