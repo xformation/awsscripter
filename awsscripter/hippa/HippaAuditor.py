@@ -206,9 +206,9 @@ class HippaAuditor(LambdaBase):
         # control2.append(self.control.control_2_7_ensure_cloudtrail_encryption_kms(cloud_trails))
         # control2.append(self.control.control_2_8_ensure_kms_cmk_rotation(regions))
         #
-        control3 = []
+        # control3 = []
         #this control is completed
-        control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
+        # control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
         #this control is completed
         # control3.append(self.control.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloud_trails))
         # control3.append(self.control.control_3_3_ensure_log_metric_filter_root_usage(cloud_trails))
@@ -242,13 +242,13 @@ class HippaAuditor(LambdaBase):
         control5 = []
         # control5.append(self.control.control_5_1_ensure_Dynamodb_SSE_enabled(regions))
         # control5.append(self.control.control_5_2_ensure_kms_cmk_rotation(regions))
-        # control5.append(self.control.control_5_3_RDS_should_not_have_Public_Interface(regions))
-        # control5.append(self.control.control_5_4_RDS_storage_should_be_encrypted(regions))
-        # control5.append(self.control.control_5_5_Remove_unused_security_groups(regions))
-        # control5.append(self.control.control_5_6_ELB_secured_listener_certificate_about_to_expire_in_1_month(regions))
-        # control5.append(self.control.control_5_7_RDS_should_not_have_be_open_to_a_large_scope(regions))
-        # control5.append(self.control.control_5_8_ALB_secured_listener_certificate_about_to_expire_in_1_week(regions))
-        # control5.append(self.control.control_5_9_ELB_is_setup_with_SSL_for_secure_communication(regions))
+        # control5.append(self.control.control_5_9_RDS_should_not_have_Public_Interface(regions))
+        # control5.append(self.control.control_5_12_RDS_storage_should_be_encrypted(regions))
+        # control5.append(self.control.control_5_25_Remove_unused_security_groups(regions))
+        # control5.append(self.control.control_5_26_ALB_secured_listener_certificate_about_to_expire_in_1_month(regions))
+        # control5.append(self.control.control_5_11_RDS_should_not_have_be_open_to_a_large_scope(regions))
+        # control5.append(self.control.control_5_18_ALB_secured_listener_certificate_about_to_expire_in_1_week(regions))
+        # control5.append(self.control.control_5_4_ELB_is_setup_with_SSL_for_secure_communication(regions))
         controls = []
         # controls.append(control1)
         # controls.append(control2)
