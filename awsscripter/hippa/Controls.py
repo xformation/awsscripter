@@ -2833,3 +2833,40 @@ class Control():
             failReason = "There S3 Buckets available without SSL enforcement Policy"
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_5_15_gets3_bucket_sse(self):
+        """Summary
+                Returns:
+                    TYPE: Description
+                """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.15"
+        description = "S3 Buckets Server Side Encryption - At Rest"
+        scored = False
+        client = boto3.client('s3')
+        response = client.list_buckets()
+        for bucket in response['Buckets']:
+            try:
+                # response = client.list_buckets()
+                encyptn = client.get_bucket_encryption(Bucket=bucket['Name'])
+                for itm in (encyptn['ServerSideEncryptionConfiguration']['Rules']):
+                    if (itm['ApplyServerSideEncryptionByDefault']['SSEAlgorithm'] == "AES256" or
+                            itm['ApplyServerSideEncryptionByDefault']['SSEAlgorithm'] == "aws:kms"):
+                        #     print("Bucket is Encrypted")
+                        # elif itm['ApplyServerSideEncryptionByDefault']['SSEAlgorithm'] == "aws:kms":
+                        print("Bucket is Encrypted")
+                    else:
+                        offenders.append(bucket['Name'])
+
+            except:
+                offenders.append(bucket['Name'])
+
+                # print("Bucket " + bucket['Name'] + " is not encrypted.")
+
+        if (len(offenders) > 0):
+            result = False
+            failReason = 'Buckets with out any encryption found'
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}

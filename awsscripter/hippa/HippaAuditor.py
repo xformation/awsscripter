@@ -218,6 +218,7 @@ class HippaAuditor(LambdaBase):
         control5.append(self.control.control_5_5_enforce_password_policy())
         control5.append(self.control.control_5_13_s3_bucket_encryption_read_actions())
         control5.append(self.control.control_5_14_s3_bucket_encryption_write_actions())
+        control5.append(self.control.control_5_15_gets3_bucket_sse())
 
 
         controls = []
