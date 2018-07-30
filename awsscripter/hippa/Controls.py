@@ -2960,3 +2960,38 @@ class Control():
                     pass
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_5_23_rotated_keys(self, credreport):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.23"
+        description = "Ensure Second access keys are rotated every 90 days or less"
+        scored = True
+        # Get current time
+        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['access_key_2_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['access_key_2_last_rotated'],
+                                                                            frm)
+                    # Verify keys have rotated in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unrotated key2")
+                except:
+                    pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}

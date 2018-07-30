@@ -221,6 +221,7 @@ class HippaAuditor(LambdaBase):
         control5.append(self.control.control_5_15_gets3_bucket_sse())
         control5.append(self.control.control_5_21_rotated_keys(cred_report))
         control5.append(self.control.control_5_22_rotated_keys(cred_report))
+        control5.append(self.control.control_5_23_rotated_keys(cred_report))
 
 
 
