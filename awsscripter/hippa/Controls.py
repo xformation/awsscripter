@@ -2791,3 +2791,45 @@ class Control():
             failReason = "There S3 Buckets available without SSL enforcement Policy"
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_5_14_s3_bucket_encryption_write_actions(self):
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.14"
+        description = "S3 Bucket have encryption in transit for write actions"
+        scored = False
+        offenders = []
+        s3_client = boto3.client('s3')
+        buckets = s3_client.list_buckets()
+        public_access = False
+        ssl = False
+        for bucket in buckets['Buckets']:
+            try:
+                bucket_policy = s3_client.get_bucket_policy(Bucket=bucket['Name'])
+                if bucket_policy:
+                    bucket_policy_str = bucket_policy['Policy']
+                    bucket_policy_dic = bucket_policy_str.replace("'", "\"")
+                    d = json.loads(bucket_policy_dic)
+                    for statement in d['Statement']:
+                        if statement['Condition']['Bool']['aws:SecureTransport'] == "true" and statement[
+                            'Effect'] == "Allow":
+                            ssl = True
+                        if statement['Condition']['Bool']['aws:SecureTransport'] == "false" and statement[
+                            'Effect'] == "Deny":
+                            ssl = True
+                        if ssl:
+                            if statement['Action'] == 's3:PutObject':
+                                # print("bucket write policy is set " + bucket['Name'])
+                                # continue
+                                pass
+                            else:
+                                offenders.append(bucket['Name'])
+
+            except Exception:
+                offenders.append(bucket['Name'])
+        if len(offenders) > 0:
+            result = False
+            failReason = "There S3 Buckets available without SSL enforcement Policy"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
