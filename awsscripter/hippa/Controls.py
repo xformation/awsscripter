@@ -2670,8 +2670,8 @@ class Control():
                 'Description': description, 'ControlId': control}
 
 
-    #5.3 RDS should not have Public Interface
-    def control_5_3_RDS_should_not_have_Public_Interface(self,regions):
+    #5.9 RDS should not have Public Interface
+    def control_5_9_RDS_should_not_have_Public_Interface(self,regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2679,7 +2679,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.3"
+        control = "5.9"
         description = "RDS should not have Public Interface"
         scored = False
         for n in regions:
@@ -2700,8 +2700,8 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    # 5.4 RDS storage should be encrypted
-    def control_5_4_RDS_storage_should_be_encrypted(self, regions):
+    # 5.12 RDS storage should be encrypted
+    def control_5_12_RDS_storage_should_be_encrypted(self, regions):
             """Summary
             Returns:
                 TYPE: Description
@@ -2709,7 +2709,7 @@ class Control():
             result = True
             failReason = ""
             offenders = []
-            control = "5.4"
+            control = "5.12"
             description = "RDS storage should be encrypted"
             scored = False
             for n in regions:
@@ -2730,8 +2730,8 @@ class Control():
             return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                     'Description': description, 'ControlId': control}
 
-    # 5.5 Remove unused security groups
-    def control_5_5_Remove_unused_security_groups(self, regions):
+    # 5.25 Remove unused security groups
+    def control_5_25_Remove_unused_security_groups(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2739,7 +2739,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.5"
+        control = "5.25"
         description = "Remove unused security groups"
         scored = False
         unused_sg = {}
@@ -2768,8 +2768,8 @@ class Control():
 
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
-
-    def control_5_6_ALB_secured_listener_certificate_about_to_expire_in_1_month(self, regions):
+    # 5.26 ALB secured listener certificate about to expire in 1 month
+    def control_5_26_ALB_secured_listener_certificate_about_to_expire_in_1_month(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2777,7 +2777,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.6"
+        control = "5.26"
         description = "ALB secured listener certificate about to expire in 1 month"
         scored = False
         client = boto3.client('elbv2')
@@ -2816,7 +2816,7 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    def control_5_7_RDS_should_not_have_be_open_to_a_large_scope(self, regions):
+    def control_5_11_RDS_should_not_have_be_open_to_a_large_scope(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2824,7 +2824,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.7"
+        control = "5.11"
         description = "RDS should not have be open to a large scope"
         scored = False
         client = boto3.client('rds')
@@ -2859,7 +2859,7 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    def control_5_8_ALB_secured_listener_certificate_about_to_expire_in_1_week(self, regions):
+    def control_5_18_ALB_secured_listener_certificate_about_to_expire_in_1_week(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2867,7 +2867,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.8"
+        control = "5.18"
         description = "ALB secured listener certificate about to expire in 1 week"
         scored = False
         client = boto3.client('elbv2')
@@ -2905,7 +2905,7 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    def control_5_9_ELB_is_setup_with_SSL_for_secure_communication(self, regions):
+    def control_5_4_ELB_is_setup_with_SSL_for_secure_communication(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2913,7 +2913,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.9"
+        control = "5.4"
         description = "ELB is setup with SSL for secure communication"
         scored = False
         client = boto3.client('elbv2')

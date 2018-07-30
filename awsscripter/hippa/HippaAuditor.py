@@ -208,7 +208,7 @@ class HippaAuditor(LambdaBase):
         #
         control3 = []
         #this control is completed
-        # control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
+        control3.append(self.control.control_3_1_ensure_log_metric_filter_unauthorized_api_calls(cloud_trails))
         #this control is completed
         # control3.append(self.control.control_3_2_ensure_log_metric_filter_console_signin_no_mfa(cloud_trails))
         # control3.append(self.control.control_3_3_ensure_log_metric_filter_root_usage(cloud_trails))
