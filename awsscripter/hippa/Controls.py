@@ -2724,3 +2724,27 @@ class Control():
 
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_5_5_enforce_password_policy(self):
+        """Summary
+                Returns:
+                    TYPE: Description
+                """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.5"
+        description = "Password Policy enabled"
+        scored = False
+        client = boto3.client('iam')
+        try:
+            response = client.get_account_password_policy()
+        except Exception:
+            print("The Password Policy with this domain cannot be found.")
+
+        if (len(offenders) > 0):
+            result = False
+            failReason = 'The Password Policy with domain cannot be found.'
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
