@@ -2870,3 +2870,93 @@ class Control():
             failReason = 'Buckets with out any encryption found'
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+    def control_5_21_rotated_keys(self, credreport):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.21"
+        description = "Ensure First activated acccessKey unused for 90 days or greater are disabled"
+        scored = True
+        # Get current time
+        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['access_key_1_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['access_key_1_last_rotated'],
+                                                                            frm)
+                    # Verify keys have rotated in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unrotated key1")
+                except:
+                    pass
+                try:
+                    last_used_datetime = datetime.strptime(credreport[i]['access_key_1_last_used_date'], frm)
+                    last_rotated_datetime = datetime.strptime(credreport[i]['access_key_1_last_rotated'], frm)
+                    # Verify keys have been used since rotation.
+                    if last_used_datetime < last_rotated_datetime:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unused key1")
+                except:
+                    pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_22_rotated_keys(self, credreport):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.22"
+        description = "Ensure Second activated acccessKey unused for 90 days or greater are disabled"
+        scored = True
+        # Get current time
+        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['access_key_2_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['access_key_2_last_rotated'],
+                                                                            frm)
+                    # Verify keys have rotated in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unrotated key2")
+                except:
+                    pass
+                try:
+                    last_used_datetime = datetime.strptime(credreport[i]['access_key_2_last_used_date'], frm)
+                    last_rotated_datetime = datetime.strptime(credreport[i]['access_key_2_last_rotated'], frm)
+                    # Verify keys have been used since rotation.
+                    if last_used_datetime < last_rotated_datetime:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unused key2")
+                except:
+                    pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
