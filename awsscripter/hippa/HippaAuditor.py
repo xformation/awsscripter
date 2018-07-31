@@ -300,5 +300,5 @@ class HippaAuditor(LambdaBase):
             Message=json.dumps({'default': url}),
             MessageStructure='json'
         )
-auditor = HippaAuditor("myname", "myproject", "us-east-1")
-auditor.handle("test","test")
+# auditor = HippaAuditor("myname", "myproject", "us-east-1")
+# auditor.handle("test","test")
