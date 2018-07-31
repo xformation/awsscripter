@@ -153,7 +153,7 @@ class HippaAuditor(LambdaBase):
         control1 = []
         control1.append(self.control.control_1_1_root_use(cred_report))
         # control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
-        control1.append(self.control.control_1_3_unused_credentials(cred_report)) #i have to disable this
+        # control1.append(self.control.control_1_3_unused_credentials(cred_report)) #i have to disable this
         control1.append(self.control.control_1_4_rotated_keys(cred_report))
         control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
         control1.append(self.control.control_1_6_password_policy_lowercase(passwordpolicy))
@@ -213,8 +213,9 @@ class HippaAuditor(LambdaBase):
         # Join results
         control5 = []
         control5.append(self.control.control_5_1_ensure_Dynamodb_SSE_enabled(regions))
-        control5.append(self.control.control_5_2_db_on_instance_storage_encrypted(regions))
-        control5.append(self.control.control_5_10_mfa_all_users(cred_report))
+        control5.append(self.control.control_5_8_db_on_instance_storage_encrypted(regions))
+        control5.append(self.control.control_5_6_mfa_all_users(cred_report))
+        control5.append(self.control.control_5_11_cloudfront_distribution_https_only())
 
         controls = []
         controls.append(control1)

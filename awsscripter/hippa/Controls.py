@@ -2595,9 +2595,10 @@ class Control():
         description = "Ensure Dynamodb SSE enabled for all tables"
         scored = False
         client = boto3.client('dynamodb')
-        resonse = client.list_tables()
+        # resonse = client.list_tables()
         # print(resonse)
         for n in regions:
+            resonse = client.list_tables()
             for table in resonse['TableNames']:
                 # print(table)
                 tabdescribe = client.describe_table(TableName=table)
@@ -2607,9 +2608,9 @@ class Control():
                     if tabdescribe['SSEDescription']['Status'] == "ENABLED":
                         # print("SSE enabled on the table")
                         pass
-                else:
-                    # print("SSE is not enabled on ")
-                    offenders.append(table)
+                    else:
+                        # print("SSE is not enabled on ")
+                        offenders.append(table)
         if (len(offenders)) > 0:
             result=False
             failReason = "SSE not enabled on Dynamodb"
@@ -2617,7 +2618,7 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    def control_5_2_db_on_instance_storage_encrypted(self, regions):
+    def control_5_8_db_on_instance_storage_encrypted(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2625,11 +2626,13 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.2"
+        control = "5.8"
         description = "Ensure db on ec2 instance should have encrypted storage"
         scored = False
         # Connect to EC2
         # ec2 = boto3.resource('ec2')
+        blkdmapping = ''
+
         client = boto3.client('ec2')
         for n in regions:
             ec2 = boto3.resource('ec2',region_name=n)
@@ -2646,9 +2649,9 @@ class Control():
                             instance_id = instance.instance_id
                             blkdmapping = instance.block_device_mappings # Getting volumes for each instance
                     if 'um' in name or 'ECS' in name or 'db' in name or 'database' in name or 'sql' in name or 'couchbase' 'raik' in name or 'hbase' in name or 'oracle' in name or 'hana' in name or 'hana' in name or 'postgres' in name or 'cassandra' in name or 'hdoop' in name or 'mongo' in name or 'graph' in name or 'Neo4j' in name:
-                        print(instance_id)
+                        # print(instance_id)
                         for volumes in blkdmapping:
-                            response = client.describe_volumes(VolumeIds=[volumes['Ebs']['VolumeId']])
+                            response = client.describe_volumes(VolumeIds=[(volumes['Ebs']['VolumeId'])])
                             for i in response['Volumes']:
                                 # print(volumes['Ebs']['VolumeId'], i['Encrypted'])
                                 if(i['Encrypted']) == False:
@@ -2661,7 +2664,7 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    def control_5_10_mfa_all_users(self, credreport):
+    def control_5_6_mfa_all_users(self, credreport):
         """Summary
 
         Args:
@@ -2673,7 +2676,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.10"
+        control = "5.6"
         description = "Ensure mfa enabled for all users"
         scored = True
         # Get current time
@@ -2693,7 +2696,7 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    def control_5_11_IAM_SSL_TLS_cert(self):
+    def control_5_27_IAM_SSL_TLS_cert(self):
         """Summary
 
         Args:
@@ -2705,7 +2708,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.11"
+        control = "5.27"
         description = "IAM SSL Certificate"
         scored = True
 
@@ -2720,7 +2723,37 @@ class Control():
                 print(cert['Expiration'])
             # Need to implement cert expiration logic once cert is created
         except:
-            print('no cert found')
+            # print('no cert found')
+            result=False
+            failReason = "no certificate found"
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_11_cloudfront_distribution_https_only(self):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.11"
+        description = ""
+        scored = True
+        client = boto3.client('cloudfront')
+        response = client.list_distributions()
+        # print(response)
+        for dist in response['DistributionList']['Items']:
+            distribution = client.get_distribution(Id=dist['Id'])
+            if (distribution['Distribution']['DistributionConfig']['DefaultCacheBehavior'][
+                    'ViewerProtocolPolicy'] == 'allows-all'):
+                offenders.append(dist['Id'])
+                failReason = "found distribution with allows-all policy"
 
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
