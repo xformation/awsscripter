@@ -152,7 +152,7 @@ class HippaAuditor(LambdaBase):
         # Comment out unwanted controls
         control1 = []
         control1.append(self.control.control_1_1_root_use(cred_report))
-        # control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
+        control1.append(self.control.control_1_2_mfa_on_password_enabled_iam(cred_report))
         # control1.append(self.control.control_1_3_unused_credentials(cred_report)) #i have to disable this
         control1.append(self.control.control_1_4_rotated_keys(cred_report))
         control1.append(self.control.control_1_5_password_policy_uppercase(passwordpolicy))
@@ -167,7 +167,7 @@ class HippaAuditor(LambdaBase):
         # control1.append(self.control.control_1_14_root_hardware_mfa_enabled())
         # control1.append(self.control.control_1_15_security_questions_registered())
         # control1.append(self.control.control_1_16_no_policies_on_iam_users())
-        # control1.append(self.control.control_1_17_detaile  d_billing_enabled())
+        # control1.append(self.control.control_1_17_detailed_billing_enabled())
         # control1.append(self.control.control_1_18_ensure_iam_master_and_manager_roles())
         # control1.append(self.control.control_1_19_maintain_current_contact_details())
         # control1.append(self.control.control_1_21_ensure_iam_instance_roles_used())
@@ -214,7 +214,7 @@ class HippaAuditor(LambdaBase):
         control5 = []
         control5.append(self.control.control_5_1_ensure_Dynamodb_SSE_enabled(regions))
         control5.append(self.control.control_5_8_db_on_instance_storage_encrypted(regions))
-        control5.append(self.control.control_5_6_mfa_all_users(cred_report))
+        # control5.append(self.control.control_5_6_mfa_all_users(cred_report)) Control 1.2 covers this topic
         control5.append(self.control.control_5_11_cloudfront_distribution_https_only())
 
         controls = []
