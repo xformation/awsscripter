@@ -216,6 +216,14 @@ class HippaAuditor(LambdaBase):
         control5.append(self.control.control_5_8_db_on_instance_storage_encrypted(regions))
         # control5.append(self.control.control_5_6_mfa_all_users(cred_report)) Control 1.2 covers this topic
         control5.append(self.control.control_5_11_cloudfront_distribution_https_only())
+        control5.append(self.control.control_5_9_RDS_should_not_have_Public_Interface(regions))
+        control5.append(self.control.control_5_12_RDS_storage_should_be_encrypted(regions))
+        control5.append(self.control.control_5_25_Remove_unused_security_groups(regions))
+        control5.append(self.control.control_5_26_ALB_secured_listener_certificate_about_to_expire_in_1_month(regions))
+        control5.append(self.control.control_5_16_RDS_should_not_have_be_open_to_a_large_scope(regions))
+        control5.append(self.control.control_5_18_ALB_secured_listener_certificate_about_to_expire_in_1_week(regions))
+        control5.append(self.control.control_5_4_ELB_is_setup_with_SSL_for_secure_communication(regions))
+
 
         controls = []
         controls.append(control1)
