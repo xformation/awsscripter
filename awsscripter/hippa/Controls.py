@@ -2757,3 +2757,269 @@ class Control():
 
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
+
+        # 5.9 RDS should not have Public Interface
+
+    def control_5_9_RDS_should_not_have_Public_Interface(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.9"
+        description = "RDS should not have Public Interface"
+        scored = False
+        for n in regions:
+            client = boto3.client('rds')
+            response = client.describe_db_instances()
+            # print(yaml.dump(response))
+            for dbinstances in response['DBInstances']:
+                # print(dbinstances)
+                if dbinstances['PubliclyAccessible'] is True:
+                    offenders.append(dbinstances['DBInstanceIdentifier'])
+                else:
+                    result = True
+
+        if (len(offenders)) > 0:
+            result = False
+            failReason = "Database  is  publicly accesible"
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 5.12 RDS storage should be encrypted
+    def control_5_12_RDS_storage_should_be_encrypted(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.12"
+        description = "RDS storage should be encrypted"
+        scored = False
+        for n in regions:
+            client = boto3.client('rds')
+            response = client.describe_db_instances()
+            # print(yaml.dump(response))
+            for dbinstances in response['DBInstances']:
+                # print(dbinstances)
+                if dbinstances['StorageEncrypted'] is False:
+                    offenders.append(dbinstances['DBInstanceIdentifier'])
+                else:
+                    result = True
+
+        if (len(offenders)) > 0:
+            result = False
+            failReason = "RDS storage should be encrypted"
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 5.25 Remove unused security groups
+    def control_5_25_Remove_unused_security_groups(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.25"
+        description = "Remove unused security groups"
+        scored = False
+        unused_sg = {}
+        for n in regions:
+            ec2 = boto3.client("ec2")
+            all_instances = ec2.describe_instances()
+            # print(all_instances)
+            all_sg = ec2.describe_security_groups()
+            # print(all_sg)
+            instance_sg_set = set()
+            all_sg_set = set()
+            for reservation in all_instances["Reservations"]:
+                for instance in reservation["Instances"]:
+                    for sg in instance["SecurityGroups"]:
+                        instance_sg_set.add(sg["GroupName"])
+                        # print(instance_sg_set)
+            for security_group in all_sg["SecurityGroups"]:
+                all_sg_set.add(security_group["GroupName"])
+                # print(all_sg_set)
+            unused_sg = all_sg_set - instance_sg_set
+        for items in unused_sg:
+            offenders.append(items)
+        if (len(offenders)) > 0:
+            result = False
+            failReason = "Remove unused security groups"
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    # 5.26 ALB secured listener certificate about to expire in 1 month
+    def control_5_26_ALB_secured_listener_certificate_about_to_expire_in_1_month(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.26"
+        description = "ALB secured listener certificate about to expire in 1 month"
+        scored = False
+        client = boto3.client('elbv2')
+        acmclient = boto3.client('acm')
+        for n in regions:
+            response = client.describe_load_balancers()
+            for elbarn in response['LoadBalancers']:
+                response = client.describe_listeners(LoadBalancerArn=elbarn['LoadBalancerArn'])
+                for listenerArn in response['Listeners']:
+                    if listenerArn['Protocol'] == 'HTTP':
+                        pass
+                    elif listenerArn['Protocol'] == 'HTTPS':
+                        pass
+                        resp = client.describe_listener_certificates(ListenerArn=listenerArn['ListenerArn'])
+                        for certarn in resp['Certificates']:
+                            if certarn['IsDefault'] is True:
+                                resss = acmclient.describe_certificate(CertificateArn=certarn['CertificateArn'])
+
+                                certdate = resss['Certificate']['NotAfter']
+                                a = (certdate.replace(tzinfo=None))
+                                # print(a)
+                                now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+                                frm = "%Y-%m-%dT%H:%M:%S+00:00"
+                                delta = a - datetime.strptime(now, frm)
+                                if delta.days < 30:
+                                    result = False
+                                    failReason = "Certificate will expires after 30 days"
+                                    offenders.append(certarn['CertificateArn'])
+                                else:
+                                    result = False
+                                    failReason = "Certificate will expires after more than 30 days"
+                                    offenders.append(certarn['CertificateArn'])
+
+        if (len(offenders)) > 0:
+            result = False
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_11_RDS_should_not_have_be_open_to_a_large_scope(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.11"
+        description = "RDS should not have be open to a large scope"
+        scored = False
+        client = boto3.client('rds')
+        for n in regions:
+            response = client.describe_db_instances()
+            for dbid in response['DBInstances']:
+                for subnet in dbid['DBSubnetGroup']['Subnets']:
+                    # print(subnet['SubnetIdentifier'])
+                    clien = boto3.client('ec2')
+                    respons = clien.describe_route_tables(
+                        Filters=[
+                            {
+                                'Name': 'association.subnet-id',
+                                'Values': [
+                                    subnet['SubnetIdentifier'],
+                                ]
+                            },
+                        ],
+                    )
+                    # print(respons['RouteTables'])
+                    for routes in respons['RouteTables']:
+                        # print(routes['Routes'])
+                        for des in routes['Routes']:
+                            # print(des)
+                            if des['DestinationCidrBlock'] == '0.0.0.0/0' or des['GatewayId'].startswith('igw-'):
+                                failReason = "This routes are publicly accesible"
+                            else:
+                                failReason = "This routes are not  publicly accesible"
+                offenders.append(dbid['DBInstanceIdentifier'])
+        if (len(offenders)) > 0:
+            result = False
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_18_ALB_secured_listener_certificate_about_to_expire_in_1_week(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.18"
+        description = "ALB secured listener certificate about to expire in 1 week"
+        scored = False
+        client = boto3.client('elbv2')
+        acmclient = boto3.client('acm')
+        for n in regions:
+            response = client.describe_load_balancers()
+            for elbarn in response['LoadBalancers']:
+                response = client.describe_listeners(LoadBalancerArn=elbarn['LoadBalancerArn'])
+                for listenerArn in response['Listeners']:
+                    if listenerArn['Protocol'] == 'HTTP':
+                        pass
+                    elif listenerArn['Protocol'] == 'HTTPS':
+                        pass
+                        resp = client.describe_listener_certificates(ListenerArn=listenerArn['ListenerArn'])
+                        for certarn in resp['Certificates']:
+                            if certarn['IsDefault'] is True:
+                                resss = acmclient.describe_certificate(CertificateArn=certarn['CertificateArn'])
+
+                                certdate = resss['Certificate']['NotAfter']
+                                a = (certdate.replace(tzinfo=None))
+                                # print(a)
+                                now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+                                frm = "%Y-%m-%dT%H:%M:%S+00:00"
+                                delta = a - datetime.strptime(now, frm)
+                                if delta.days < 30:
+                                    result = False
+                                    failReason = "Certificate will expires after 7 days"
+                                else:
+                                    result = False
+                                    failReason = "Certificate will expires after more than 7 days"
+                                    offenders.append(certarn['CertificateArn'])
+
+        if (len(offenders)) > 0:
+            result = False
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_4_ELB_is_setup_with_SSL_for_secure_communication(self, regions):
+        """Summary
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.4"
+        description = "ELB is setup with SSL for secure communication"
+        scored = False
+        client = boto3.client('elbv2')
+        for n in regions:
+            response = client.describe_load_balancers()
+            for elbarn in response['LoadBalancers']:
+                response = client.describe_listeners(LoadBalancerArn=elbarn['LoadBalancerArn'])
+                for listenerArn in response['Listeners']:
+                    if listenerArn['Protocol'] == 'HTTPS':
+                        result = False
+                        failReason = "ELB is passed through secured protocol "
+                    else:
+                        result = True
+                        offenders.append(listenerArn['ListenerArn'])
+        if (len(offenders)) > 0:
+            result = False
+            failReason = "ELB is passed not through secured protocol "
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
