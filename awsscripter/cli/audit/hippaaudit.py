@@ -14,7 +14,7 @@ from awsscripter.hippa.HippaAuditor import HippaAuditor
 @catch_exceptions
 def audit_hippa_command(ctx, level):
     """
-    Depending on level , it will perform the CISP audit, by default the level is FULL
+    Depending on level , it will perform the HIPPA audit, by default the level is FULL
     """
     print("Auditing with level  " + level)
 

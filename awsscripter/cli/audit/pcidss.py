@@ -10,7 +10,7 @@ import logging
 @catch_exceptions
 def audit_pcidss_command(ctx, level):
     """
-    Depending on level , it will perform the CISP audit, by default the level is FULL
+    Depending on level , it will perform the PCI-DSS audit, by default the level is FULL
     """
     logger = logging.getLogger(__name__)
     logger.info("Auditing with level  " + level)
