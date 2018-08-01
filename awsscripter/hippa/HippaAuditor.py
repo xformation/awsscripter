@@ -223,6 +223,13 @@ class HippaAuditor(LambdaBase):
         control5.append(self.control.control_5_16_RDS_should_not_have_be_open_to_a_large_scope(regions))
         control5.append(self.control.control_5_18_ALB_secured_listener_certificate_about_to_expire_in_1_week(regions))
         control5.append(self.control.control_5_4_ELB_is_setup_with_SSL_for_secure_communication(regions))
+        control5.append(self.control.control_5_5_enforce_password_policy())
+        control5.append(self.control.control_5_13_s3_bucket_encryption_read_actions())
+        control5.append(self.control.control_5_14_s3_bucket_encryption_write_actions())
+        control5.append(self.control.control_5_15_gets3_bucket_sse())
+        control5.append(self.control.control_5_21_rotated_keys(cred_report))
+        control5.append(self.control.control_5_22_rotated_keys(cred_report))
+        control5.append(self.control.control_5_23_rotated_keys(cred_report))
 
 
         controls = []
@@ -308,5 +315,5 @@ class HippaAuditor(LambdaBase):
             Message=json.dumps({'default': url}),
             MessageStructure='json'
         )
-# auditor = HippaAuditor("myname", "myproject", "us-east-1")
-# auditor.handle("test","test")
+auditor = HippaAuditor("myname", "myproject", "us-east-1")
+auditor.handle("test","test")
