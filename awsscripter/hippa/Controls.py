@@ -2906,7 +2906,7 @@ class Control():
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
 
-    def control_5_11_RDS_should_not_have_be_open_to_a_large_scope(self, regions):
+    def control_5_16_RDS_should_not_have_be_open_to_a_large_scope(self, regions):
         """Summary
         Returns:
             TYPE: Description
@@ -2914,7 +2914,7 @@ class Control():
         result = True
         failReason = ""
         offenders = []
-        control = "5.11"
+        control = "5.16"
         description = "RDS should not have be open to a large scope"
         scored = False
         client = boto3.client('rds')
