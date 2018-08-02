@@ -3,6 +3,7 @@ from awsscripter.common.connection_manager import ConnectionManager
 import time
 import sys
 import re
+import json
 
 from datetime import datetime
 import boto3
@@ -3021,5 +3022,274 @@ class Control():
         if (len(offenders)) > 0:
             result = False
             failReason = "ELB is passed not through secured protocol "
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_5_enforce_password_policy(self):
+        """Summary
+                Returns:
+                    TYPE: Description
+                """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.5"
+        description = "Password Policy enabled"
+        scored = False
+        client = boto3.client('iam')
+        try:
+            response = client.get_account_password_policy()
+        except Exception:
+            print("The Password Policy with this domain cannot be found.")
+
+        if (len(offenders) > 0):
+            result = False
+            failReason = 'The Password Policy with domain cannot be found.'
+
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_13_s3_bucket_encryption_read_actions(self):
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.13"
+        description = "S3 Bucket have encryption in transit for read actions"
+        scored = False
+        offenders = []
+        s3_client = boto3.client('s3')
+        buckets = s3_client.list_buckets()
+        public_access = False
+        ssl = False
+        for bucket in buckets['Buckets']:
+            try:
+                bucket_policy = s3_client.get_bucket_policy(Bucket=bucket['Name'])
+                if bucket_policy:
+                    bucket_policy_str = bucket_policy['Policy']
+                    bucket_policy_dic = bucket_policy_str.replace("'", "\"")
+                    d = json.loads(bucket_policy_dic)
+                    for statement in d['Statement']:
+                        if statement['Condition']['Bool']['aws:SecureTransport'] == "true" and statement[
+                            'Effect'] == "Allow":
+                            ssl = True
+                        if statement['Condition']['Bool']['aws:SecureTransport'] == "false" and statement[
+                            'Effect'] == "Deny":
+                            ssl = True
+                        if ssl:
+                            if statement['Action'] == 's3:GetObject':
+                                # print("bucket read policy is set " + bucket['Name'])
+                                # continue
+                                pass
+                            else:
+                                offenders.append(bucket['Name'])
+
+            except Exception:
+                offenders.append(bucket['Name'])
+        if len(offenders) > 0:
+            result = False
+            failReason = "There S3 Buckets available without SSL enforcement Policy"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_14_s3_bucket_encryption_write_actions(self):
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.14"
+        description = "S3 Bucket have encryption in transit for write actions"
+        scored = False
+        offenders = []
+        s3_client = boto3.client('s3')
+        buckets = s3_client.list_buckets()
+        public_access = False
+        ssl = False
+        for bucket in buckets['Buckets']:
+            try:
+                bucket_policy = s3_client.get_bucket_policy(Bucket=bucket['Name'])
+                if bucket_policy:
+                    bucket_policy_str = bucket_policy['Policy']
+                    bucket_policy_dic = bucket_policy_str.replace("'", "\"")
+                    d = json.loads(bucket_policy_dic)
+                    for statement in d['Statement']:
+                        if statement['Condition']['Bool']['aws:SecureTransport'] == "true" and statement[
+                            'Effect'] == "Allow":
+                            ssl = True
+                        if statement['Condition']['Bool']['aws:SecureTransport'] == "false" and statement[
+                            'Effect'] == "Deny":
+                            ssl = True
+                        if ssl:
+                            if statement['Action'] == 's3:PutObject':
+                                # print("bucket write policy is set " + bucket['Name'])
+                                # continue
+                                pass
+                            else:
+                                offenders.append(bucket['Name'])
+
+            except Exception:
+                offenders.append(bucket['Name'])
+        if len(offenders) > 0:
+            result = False
+            failReason = "There S3 Buckets available without SSL enforcement Policy"
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_15_gets3_bucket_sse(self):
+        """Summary
+                Returns:
+                    TYPE: Description
+                """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.15"
+        description = "S3 Buckets Server Side Encryption - At Rest"
+        scored = False
+        client = boto3.client('s3')
+        response = client.list_buckets()
+        for bucket in response['Buckets']:
+            try:
+                # response = client.list_buckets()
+                encyptn = client.get_bucket_encryption(Bucket=bucket['Name'])
+                for itm in (encyptn['ServerSideEncryptionConfiguration']['Rules']):
+                    if (itm['ApplyServerSideEncryptionByDefault']['SSEAlgorithm'] == "AES256" or
+                            itm['ApplyServerSideEncryptionByDefault']['SSEAlgorithm'] == "aws:kms"):
+                        #     print("Bucket is Encrypted")
+                        # elif itm['ApplyServerSideEncryptionByDefault']['SSEAlgorithm'] == "aws:kms":
+                        print("Bucket is Encrypted")
+                    else:
+                        offenders.append(bucket['Name'])
+
+            except:
+                offenders.append(bucket['Name'])
+
+                # print("Bucket " + bucket['Name'] + " is not encrypted.")
+
+        if (len(offenders) > 0):
+            result = False
+            failReason = 'Buckets with out any encryption found'
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_21_rotated_keys(self, credreport):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.21"
+        description = "Ensure First activated acccessKey unused for 90 days or greater are disabled"
+        scored = True
+        # Get current time
+        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['access_key_1_active'] == "true":
+                try:
+                    delta = datetime.strftime(now, frm) - datetime.strftime(credreport[i]['access_key_1_last_rotated'], frm)
+                    # Verify keys have rotated in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unrotated key1")
+                except:
+                    pass
+                try:
+                    last_used_datetime = datetime.strptime(credreport[i]['access_key_1_last_used_date'], frm)
+                    last_rotated_datetime = datetime.strptime(credreport[i]['access_key_1_last_rotated'], frm)
+                    # Verify keys have been used since rotation.
+                    if last_used_datetime < last_rotated_datetime:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unused key1")
+                except:
+                    pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_22_rotated_keys(self, credreport):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.22"
+        description = "Ensure Second activated acccessKey unused for 90 days or greater are disabled"
+        scored = True
+        # Get current time
+        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['access_key_2_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['access_key_2_last_rotated'],
+                                                                            frm)
+                    # Verify keys have rotated in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unrotated key2")
+                except:
+                    pass
+                try:
+                    last_used_datetime = datetime.strptime(credreport[i]['access_key_2_last_used_date'], frm)
+                    last_rotated_datetime = datetime.strptime(credreport[i]['access_key_2_last_rotated'], frm)
+                    # Verify keys have been used since rotation.
+                    if last_used_datetime < last_rotated_datetime:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unused key2")
+                except:
+                    pass
+        return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
+                'Description': description, 'ControlId': control}
+
+    def control_5_23_rotated_keys(self, credreport):
+        """Summary
+
+        Args:
+            credreport (TYPE): Description
+
+        Returns:
+            TYPE: Description
+        """
+        result = True
+        failReason = ""
+        offenders = []
+        control = "5.23"
+        description = "Ensure Second access keys are rotated every 90 days or less"
+        scored = True
+        # Get current time
+        now = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(time.time()))
+        frm = "%Y-%m-%dT%H:%M:%S+00:00"
+
+        # Look for unused credentails
+        for i in range(len(credreport)):
+            if credreport[i]['access_key_2_active'] == "true":
+                try:
+                    delta = datetime.strptime(now, frm) - datetime.strptime(credreport[i]['access_key_2_last_rotated'],
+                                                                            frm)
+                    # Verify keys have rotated in the last 90 days
+                    if delta.days > 90:
+                        result = False
+                        failReason = "Key rotation >90 days or not used since rotation"
+                        offenders.append(str(credreport[i]['arn']) + ":unrotated key2")
+                except:
+                    pass
         return {'Result': result, 'failReason': failReason, 'Offenders': offenders, 'ScoredControl': scored,
                 'Description': description, 'ControlId': control}
