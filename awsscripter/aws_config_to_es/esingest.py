@@ -11,8 +11,8 @@ from argparse import ArgumentParser
 import boto3
 from botocore.client import Config
 
-from aws_config_to_es.configservice_util import ConfigServiceUtil
-from aws_config_to_es.elastic import ElasticSearch
+from awsscripter.aws_config_to_es.configservice_util import ConfigServiceUtil
+from awsscripter.aws_config_to_es.elastic import ElasticSearch
 
 DOWNLOADED_SNAPSHOT_FILE_NAME = "D:\\configsnapshot" + \
                                 str(time.time()) + ".json.gz"

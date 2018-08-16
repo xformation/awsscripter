@@ -23,7 +23,7 @@ from awsscripter import __version__
 from awsscripter.cli.security.security import security_group
 from awsscripter.cli.testcommand.testcommand import testcommand_group
 from awsscripter.cli.awsbilling.awsbilling import billing_group
-
+from awsscripter.cli.awstoes.awstoes import es_group
 @click.group()
 @click.version_option(version=__version__, prog_name="awsscripter")
 @click.option("--debug", is_flag=True, help="Turn on debug logging.")
@@ -93,3 +93,4 @@ cli.add_command(testcommand_group)
 cli.add_command(security_group)
 cli.add_command(list_group)
 cli.add_command(billing_group)
+cli.add_command(es_group)
