@@ -1,5 +1,5 @@
 __author__ = 'Vladimir Budilov'
-import aws_config_to_es
+
 
 """
 Copyright 2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.

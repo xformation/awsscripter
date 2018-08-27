@@ -150,6 +150,7 @@ def loop_through_regions(cur_region, iso_now_time, es):
     if item_count > 0:
         app_log.info("Added: " + str(item_count) +
                      " items into ElasticSearch from " + cur_region)
+        exit()
     if could_not_add > 0:
         app_log.warn("Couldn't add " + str(could_not_add) +
                      " to ElasticSearch. Maybe you have permission issues? ")
@@ -179,10 +180,10 @@ def main(args, es):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument('--region', '-r',
+    parser.add_argument('--region', '-r',default='us-east-1',
                         help='The region that needs to be analyzed. If left '
                              'blank all regions will be analyzed.')
-    parser.add_argument('--destination', '-d', required=True,
+    parser.add_argument('--destination', '-d', default='localhost:9200',
                         help='The ip:port of the elastic search instance')
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
                         help='If selected, the app runs in verbose mode '
@@ -222,3 +223,4 @@ if __name__ == "__main__":
     verbose_log.info("Setting up the elasticsearch instance")
 
     main(args, ElasticSearch(connections=destination, log=verbose_log))
+
